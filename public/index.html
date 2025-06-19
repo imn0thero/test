@@ -1,343 +1,91 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Web Chat</title>
-    <link rel="stylesheet" href="styles.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Chat Room</title>
+  <link rel="stylesheet" href="css/style.css" />
 </head>
 <body>
-    <div class="container">
-        <!-- Chat Header -->
-        <div class="chat-header">
-            <div class="chat-title">
-                Web Chat - <span id="currentUsername"></span>
-            </div>
-            <div class="header-buttons">
-                <button class="btn-small btn-danger" id="clearMessagesBtn">Hapus Semua Pesan</button>
-                <button class="btn-small" id="logoutBtn">Logout</button>
-            </div>
-        </div>
+  <div class="chat-container">
+    <header>
+      <h2>Web Chat</h2>
+      <div class="status">
+        <span id="onlineStatus">Online Users:</span>
+        <span id="lastSeen"></span>
+      </div>
+      <div class="actions">
+        <form action="/logout" method="POST" id="logoutForm">
+          <input type="hidden" name="username" id="logoutUsername" />
+          <button type="submit">Logout</button>
+        </form>
+        <button id="deleteAllBtn">Hapus Semua Pesan</button>
+      </div>
+    </header>
 
-        <!-- Chat Main Content -->
-        <div class="chat-main">
-            <!-- Sidebar with Online Users -->
-            <div class="sidebar">
-                <div class="sidebar-header">
-                    Online Users
-                </div>
-                <div class="users-list" id="usersList">
-                    <div class="loading"></div>
-                </div>
-            </div>
+    <main id="chatBox"></main>
 
-            <!-- Chat Content -->
-            <div class="chat-content">
-                <!-- Messages Container -->
-                <div class="messages-container" id="messagesContainer">
-                    <div class="loading"></div>
-                </div>
+    <form id="messageForm" enctype="multipart/form-data">
+      <input type="hidden" name="sender" id="sender" />
+      <input type="text" name="text" placeholder="Ketik pesan..." required />
+      <input type="file" name="media" accept="image/*,video/*" />
+      <button type="submit">Kirim</button>
+    </form>
+  </div>
 
-                <!-- Message Input -->
-                <div class="message-input-container">
-                    <form class="message-input-form" id="messageForm">
-                        <div class="file-input-container">
-                            <input type="file" id="fileInput" class="file-input" accept="image/*,video/*,audio/*,.pdf,.doc,.docx">
-                            <label for="fileInput" class="file-input-label">
-                                📎
-                            </label>
-                        </div>
-                        
-                        <textarea 
-                            id="messageInput" 
-                            class="message-input" 
-                            placeholder="Ketik pesan Anda..." 
-                            rows="1"
-                            maxlength="1000"
-                        ></textarea>
-                        
-                        <button type="submit" class="send-button" id="sendButton">
-                            ➤
-                        </button>
-                    </form>
-                </div>
-            </div>
-        </div>
-    </div>
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    const urlParams = new URLSearchParams(window.location.search);
+    const username = urlParams.get('user');
+    if (!username) window.location.href = '/login.html';
 
-    <script src="/socket.io/socket.io.js"></script>
-    <script>
-        // Check if user is logged in
-        const currentUser = JSON.parse(localStorage.getItem('currentUser'));
-        if (!currentUser) {
-            window.location.href = '/login';
-        }
+    document.getElementById('sender').value = username;
+    document.getElementById('logoutUsername').value = username;
 
-        // Initialize Socket.IO
-        const socket = io();
-        
-        // DOM Elements
-        const messagesContainer = document.getElementById('messagesContainer');
-        const messageForm = document.getElementById('messageForm');
-        const messageInput = document.getElementById('messageInput');
-        const fileInput = document.getElementById('fileInput');
-        const sendButton = document.getElementById('sendButton');
-        const usersList = document.getElementById('usersList');
-        const currentUsernameSpan = document.getElementById('currentUsername');
-        const logoutBtn = document.getElementById('logoutBtn');
-        const clearMessagesBtn = document.getElementById('clearMessagesBtn');
+    const socket = io();
+    socket.emit('userOnline', username);
 
-        // Set current username
-        currentUsernameSpan.textContent = currentUser.username;
+    const chatBox = document.getElementById('chatBox');
 
-        // Join chat room
-        socket.emit('join', currentUser);
+    function renderMessage(msg) {
+      const div = document.createElement('div');
+      div.className = 'message ' + (msg.sender === username ? 'me' : 'other');
+      div.innerHTML = `
+        <p><strong>${msg.sender}</strong></p>
+        <p>${msg.text || ''}</p>
+        ${msg.media ? `<img src="${msg.media}" class="media" />` : ''}
+        <small>${new Date(msg.timestamp).toLocaleString()}</small>
+      `;
+      chatBox.appendChild(div);
+      chatBox.scrollTop = chatBox.scrollHeight;
+    }
 
-        // Auto-resize textarea
-        messageInput.addEventListener('input', function() {
-            this.style.height = 'auto';
-            this.style.height = (this.scrollHeight) + 'px';
-        });
+    fetch('/messages')
+      .then(res => res.json())
+      .then(data => data.forEach(renderMessage));
 
-        // Send message on Enter (Shift+Enter for new line)
-        messageInput.addEventListener('keydown', function(e) {
-            if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                sendMessage();
-            }
-        });
+    socket.on('newMessage', renderMessage);
 
-        // Message form submission
-        messageForm.addEventListener('submit', function(e) {
-            e.preventDefault();
-            sendMessage();
-        });
+    socket.on('clearMessages', () => {
+      chatBox.innerHTML = '';
+    });
 
-        // File input change
-        fileInput.addEventListener('change', function(e) {
-            if (e.target.files.length > 0) {
-                uploadFile(e.target.files[0]);
-            }
-        });
+    socket.on('updateStatus', (sessions) => {
+      let text = Object.keys(sessions).join(', ') || 'Tidak ada user online';
+      document.getElementById('onlineStatus').textContent = 'Online Users: ' + text;
+    });
 
-        // Logout functionality
-        logoutBtn.addEventListener('click', async function() {
-            if (confirm('Yakin ingin logout?')) {
-                try {
-                    await fetch('/api/logout', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({ userId: currentUser.id })
-                    });
-                } catch (error) {
-                    console.error('Logout error:', error);
-                }
-                
-                localStorage.removeItem('currentUser');
-                socket.disconnect();
-                window.location.href = '/login';
-            }
-        });
+    document.getElementById('messageForm').addEventListener('submit', async e => {
+      e.preventDefault();
+      const form = e.target;
+      const data = new FormData(form);
+      await fetch('/message', { method: 'POST', body: data });
+      form.reset();
+    });
 
-        // Clear all messages
-        clearMessagesBtn.addEventListener('click', async function() {
-            if (confirm('Yakin ingin menghapus semua pesan? Tindakan ini tidak dapat dibatalkan.')) {
-                try {
-                    const response = await fetch('/api/messages', {
-                        method: 'DELETE'
-                    });
-                    
-                    if (response.ok) {
-                        messagesContainer.innerHTML = '';
-                        alert('Semua pesan berhasil dihapus!');
-                    }
-                } catch (error) {
-                    console.error('Error clearing messages:', error);
-                    alert('Gagal menghapus pesan. Silakan coba lagi.');
-                }
-            }
-        });
-
-        // Send message function
-        function sendMessage() {
-            const content = messageInput.value.trim();
-            if (!content) return;
-
-            const messageData = {
-                content: content,
-                type: 'text'
-            };
-
-            socket.emit('sendMessage', messageData);
-            messageInput.value = '';
-            messageInput.style.height = 'auto';
-        }
-
-        // Upload file function
-        async function uploadFile(file) {
-            const formData = new FormData();
-            formData.append('file', file);
-
-            try {
-                sendButton.disabled = true;
-                sendButton.textContent = '⏳';
-
-                const response = await fetch('/api/upload', {
-                    method: 'POST',
-                    body: formData
-                });
-
-                const data = await response.json();
-
-                if (data.success) {
-                    const messageData = {
-                        content: `File: ${data.originalName}`,
-                        type: 'file',
-                        file: {
-                            url: data.url,
-                            name: data.originalName,
-                            size: data.size
-                        }
-                    };
-
-                    socket.emit('sendMessage', messageData);
-                    fileInput.value = '';
-                } else {
-                    alert('Gagal mengupload file: ' + data.error);
-                }
-            } catch (error) {
-                console.error('Upload error:', error);
-                alert('Gagal mengupload file. Silakan coba lagi.');
-            } finally {
-                sendButton.disabled = false;
-                sendButton.textContent = '➤';
-            }
-        }
-
-        // Format time
-        function formatTime(timestamp) {
-            const date = new Date(timestamp);
-            return date.toLocaleTimeString('id-ID', {
-                hour: '2-digit',
-                minute: '2-digit'
-            });
-        }
-
-        // Format last seen
-        function formatLastSeen(timestamp) {
-            const now = Date.now();
-            const diff = now - timestamp;
-            const minutes = Math.floor(diff / (1000 * 60));
-            const hours = Math.floor(diff / (1000 * 60 * 60));
-            const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-
-            if (minutes < 1) return 'Baru saja';
-            if (minutes < 60) return `${minutes} menit lalu`;
-            if (hours < 24) return `${hours} jam lalu`;
-            return `${days} hari lalu`;
-        }
-
-        // Display message
-        function displayMessage(message) {
-            const messageDiv = document.createElement('div');
-            messageDiv.className = 'message';
-            
-            let fileContent = '';
-            if (message.type === 'file' && message.file) {
-                const fileUrl = message.file.url;
-                const fileName = message.file.name;
-                const fileExt = fileName.split('.').pop().toLowerCase();
-                
-                if (['jpg', 'jpeg', 'png', 'gif'].includes(fileExt)) {
-                    fileContent = `<div class="message-file"><img src="${fileUrl}" alt="${fileName}" onclick="window.open('${fileUrl}', '_blank')"></div>`;
-                } else if (['mp4', 'webm', 'ogg'].includes(fileExt)) {
-                    fileContent = `<div class="message-file"><video controls><source src="${fileUrl}" type="video/${fileExt}"></video></div>`;
-                } else if (['mp3', 'wav', 'ogg'].includes(fileExt)) {
-                    fileContent = `<div class="message-file"><audio controls><source src="${fileUrl}" type="audio/${fileExt}"></audio></div>`;
-                } else {
-                    fileContent = `<div class="message-file"><a href="${fileUrl}" target="_blank" download="${fileName}">📎 ${fileName}</a></div>`;
-                }
-            }
-
-            messageDiv.innerHTML = `
-                <div class="message-header">
-                    <span class="message-author">${message.username}</span>
-                    <span class="message-time">${formatTime(message.timestamp)}</span>
-                </div>
-                <div class="message-content">${message.content}</div>
-                ${fileContent}
-            `;
-
-            messagesContainer.appendChild(messageDiv);
-            messagesContainer.scrollTop = messagesContainer.scrollHeight;
-        }
-
-        // Update users list
-        function updateUsersList(users) {
-            usersList.innerHTML = '';
-            
-            users.forEach(user => {
-                const userDiv = document.createElement('div');
-                userDiv.className = 'user-item';
-                
-                const statusText = user.isOnline ? 'Online' : formatLastSeen(user.lastSeen);
-                
-                userDiv.innerHTML = `
-                    <div class="user-status ${user.isOnline ? 'online' : 'offline'}"></div>
-                    <div class="user-info">
-                        <div class="username">${user.username}</div>
-                        <div class="last-seen">${statusText}</div>
-                    </div>
-                `;
-                
-                usersList.appendChild(userDiv);
-            });
-        }
-
-        // Socket event listeners
-        socket.on('loadMessages', function(messages) {
-            messagesContainer.innerHTML = '';
-            messages.forEach(message => {
-                displayMessage(message);
-            });
-        });
-
-        socket.on('newMessage', function(message) {
-            displayMessage(message);
-        });
-
-        socket.on('userStatusUpdate', function(users) {
-            updateUsersList(users);
-        });
-
-        socket.on('connect', function() {
-            console.log('Connected to server');
-        });
-
-        socket.on('disconnect', function() {
-            console.log('Disconnected from server');
-        });
-
-        // Handle page unload
-        window.addEventListener('beforeunload', function() {
-            socket.disconnect();
-        });
-
-        // Load initial data
-        async function loadInitialData() {
-            try {
-                // Load users
-                const usersResponse = await fetch('/api/users');
-                const users = await usersResponse.json();
-                updateUsersList(users);
-            } catch (error) {
-                console.error('Error loading initial data:', error);
-            }
-        }
-
-        loadInitialData();
-    </script>
+    document.getElementById('deleteAllBtn').onclick = () => {
+      fetch('/deleteAll', { method: 'POST' });
+    };
+  </script>
 </body>
 </html>
