@@ -1,91 +1,211 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="id">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Chat Room</title>
-  <link rel="stylesheet" href="css/style.css" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Modak&family=Barrio&family=Nova+Round&display=swap" rel="stylesheet" />
+  <link rel="manifest" href="/manifest.json" />
+  <link rel="icon" href="/icon-512.png" />
+  <meta name="theme-color" content="#000000" />
+  <link rel="stylesheet" href="style.css" />
+  <title>SayHai</title>
 </head>
 <body>
-  <div class="chat-container">
-    <header>
-      <h2>Web Chat</h2>
-      <div class="status">
-        <span id="onlineStatus">Online Users:</span>
-        <span id="lastSeen"></span>
-      </div>
-      <div class="actions">
-        <form action="/logout" method="POST" id="logoutForm">
-          <input type="hidden" name="username" id="logoutUsername" />
-          <button type="submit">Logout</button>
-        </form>
-        <button id="deleteAllBtn">Hapus Semua Pesan</button>
-      </div>
-    </header>
 
-    <main id="chatBox"></main>
+  <div class="container">
+    <div class="top-right">
+      <button class="toggle-btn" onclick="toggleDarkMode()" id="modeIcon">🌞</button>
+      <button class="logout-btn" onclick="logout()">Logout</button>
+    </div>
 
-    <form id="messageForm" enctype="multipart/form-data">
-      <input type="hidden" name="sender" id="sender" />
-      <input type="text" name="text" placeholder="Ketik pesan..." required />
-      <input type="file" name="media" accept="image/*,video/*" />
-      <button type="submit">Kirim</button>
-    </form>
+    <h2 id="welcome"></h2>
+
+    <div>
+      <h3>Pengguna Online:</h3>
+      <div id="onlineUsers"></div>
+    </div>
+
+    <div id="chatbox"></div>
+
+    <!-- Upload media -->
+    <div id="mediaArea">
+      <input type="file" id="mediaInput" />
+      <button onclick="uploadMedia()">Kirim Media</button>
+    </div>
+
+    <!-- Kirim pesan teks -->
+    <div id="inputArea">
+      <input type="text" id="msgInput" placeholder="Tulis pesan..." autocomplete="off" />
+      <button onclick="sendMessage()">Kirim</button>
+    </div>
+
+    <div id="datetime" class="datetime-display"></div>
   </div>
 
   <script src="/socket.io/socket.io.js"></script>
   <script>
-    const urlParams = new URLSearchParams(window.location.search);
-    const username = urlParams.get('user');
-    if (!username) window.location.href = '/login.html';
+    function updateDateTime() {
+      const now = new Date();
+      const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+      const date = now.toLocaleDateString('id-ID', options);
+      const time = now.toLocaleTimeString('id-ID');
+      document.getElementById('datetime').textContent = `${date} | ${time}`;
+    }
+    setInterval(updateDateTime, 1000);
+    updateDateTime();
 
-    document.getElementById('sender').value = username;
-    document.getElementById('logoutUsername').value = username;
-
-    const socket = io();
-    socket.emit('userOnline', username);
-
-    const chatBox = document.getElementById('chatBox');
-
-    function renderMessage(msg) {
-      const div = document.createElement('div');
-      div.className = 'message ' + (msg.sender === username ? 'me' : 'other');
-      div.innerHTML = `
-        <p><strong>${msg.sender}</strong></p>
-        <p>${msg.text || ''}</p>
-        ${msg.media ? `<img src="${msg.media}" class="media" />` : ''}
-        <small>${new Date(msg.timestamp).toLocaleString()}</small>
-      `;
-      chatBox.appendChild(div);
-      chatBox.scrollTop = chatBox.scrollHeight;
+    if ("Notification" in window && Notification.permission !== "granted") {
+      Notification.requestPermission();
     }
 
-    fetch('/messages')
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme === 'dark') document.body.classList.add('dark-mode');
+    updateToggleIcon(savedTheme || 'light');
+
+    const username = localStorage.getItem('username');
+    const password = localStorage.getItem('password');
+    if (!username || !password) {
+      window.location.href = 'login.html';
+    }
+
+    document.getElementById('welcome').innerText = "Hai, " + username;
+
+    const socket = io();
+    socket.emit('login', { username, password });
+
+    socket.on('loginResult', data => {
+      if (!data.success) {
+        alert(data.message || 'Login gagal.');
+        localStorage.removeItem('username');
+        localStorage.removeItem('password');
+        window.location.href = 'login.html';
+        return;
+      }
+      if (data.messages && Array.isArray(data.messages)) {
+        data.messages.forEach(msg => appendMessage(msg));
+      }
+    });
+
+    socket.on('message', data => {
+      appendMessage(data);
+      if (data.user !== username && Notification.permission === "granted") {
+        new Notification("Ping");
+      }
+    });
+
+    socket.on('userList', users => {
+      const userList = users.map(user => `<li>${escapeHtml(user)} 🔵</li>`).join('');
+      document.getElementById('onlineUsers').innerHTML = "<ul>" + userList + "</ul>";
+    });
+
+    function appendMessage(data) {
+      const div = document.createElement('div');
+      div.classList.add('message', data.user === username ? 'message-right' : 'message-left');
+
+      const time = new Date(data.time).toLocaleTimeString('id-ID', {
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+
+      let content = `<strong>${escapeHtml(data.user)}:</strong><br>`;
+
+      if (data.media) {
+        const fileType = data.type || '';
+        if (fileType.startsWith('image/')) {
+          content += `<img src="${data.media}" style="max-width: 200px; border-radius: 10px;" />`;
+        } else if (fileType.startsWith('video/')) {
+          content += `<video controls style="max-width: 200px; border-radius: 10px;">
+                        <source src="${data.media}" type="${fileType}">
+                        Browser tidak mendukung video.
+                      </video>`;
+        } else if (fileType.startsWith('audio/')) {
+          content += `<audio controls>
+                        <source src="${data.media}" type="${fileType}">
+                        Browser tidak mendukung audio.
+                      </audio>`;
+        } else {
+          const filename = data.media.split('/').pop();
+          content += `<a href="${data.media}" download target="_blank">📁 Unduh ${filename}</a>`;
+        }
+      } else if (data.text) {
+        content += `${escapeHtml(data.text)}`;
+      }
+
+      content += `<br><span style="font-size: 0.75em; color: gray;">🕒 ${time}</span>`;
+
+      div.innerHTML = content;
+
+      const chatbox = document.getElementById('chatbox');
+      chatbox.appendChild(div);
+      chatbox.scrollTop = chatbox.scrollHeight;
+    }
+
+    function sendMessage() {
+      const input = document.getElementById('msgInput');
+      const text = input.value.trim();
+      if (text) {
+        socket.emit('message', { text });
+        input.value = '';
+      }
+    }
+
+    function uploadMedia() {
+      const fileInput = document.getElementById('mediaInput');
+      const file = fileInput.files[0];
+      if (!file) return alert("Pilih file media terlebih dahulu.");
+
+      const formData = new FormData();
+      formData.append('media', file);
+      formData.append('user', username);
+
+      fetch('/upload', {
+        method: 'POST',
+        body: formData
+      })
       .then(res => res.json())
-      .then(data => data.forEach(renderMessage));
+      .then(data => {
+        if (!data.success) {
+          alert('Gagal upload media.');
+        }
+      })
+      .catch(err => {
+        console.error(err);
+        alert('Upload error.');
+      });
 
-    socket.on('newMessage', renderMessage);
+      fileInput.value = '';
+    }
 
-    socket.on('clearMessages', () => {
-      chatBox.innerHTML = '';
-    });
+    function logout() {
+      localStorage.removeItem('username');
+      localStorage.removeItem('password');
+      socket.emit('logout');
+      window.location.href = 'login.html';
+    }
 
-    socket.on('updateStatus', (sessions) => {
-      let text = Object.keys(sessions).join(', ') || 'Tidak ada user online';
-      document.getElementById('onlineStatus').textContent = 'Online Users: ' + text;
-    });
+    function toggleDarkMode() {
+      document.body.classList.toggle('dark-mode');
+      const mode = document.body.classList.contains('dark-mode') ? 'dark' : 'light';
+      localStorage.setItem('theme', mode);
+      updateToggleIcon(mode);
+    }
 
-    document.getElementById('messageForm').addEventListener('submit', async e => {
-      e.preventDefault();
-      const form = e.target;
-      const data = new FormData(form);
-      await fetch('/message', { method: 'POST', body: data });
-      form.reset();
-    });
+    function updateToggleIcon(mode) {
+      const icon = document.getElementById('modeIcon');
+      icon.textContent = mode === 'dark' ? '🌜' : '🌞';
+    }
 
-    document.getElementById('deleteAllBtn').onclick = () => {
-      fetch('/deleteAll', { method: 'POST' });
-    };
+    function escapeHtml(str) {
+      return str.replace(/[&<>"']/g, m => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#039;'
+      })[m]);
+    }
   </script>
 </body>
 </html>
