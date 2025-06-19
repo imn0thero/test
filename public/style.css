@@ -1,0 +1,268 @@
+/* Font dan warna dasar */
+body {
+  margin: 0;
+  padding: 0;
+  font-family: 'Nova Round', cursive;
+  background-color: #fff;
+  color: #000;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  transition: background-color 0.3s, color 0.3s;
+}
+
+.container {
+  border: 2px solid #000;
+  border-radius: 15px;
+  padding: 20px;
+  max-width: 400px;
+  width: 100%;
+  background-color: #fff;
+  position: relative;
+  box-shadow: 0 0 10px #000;
+  transition: background-color 0.3s, border-color 0.3s;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Tombol pojok kanan atas */
+.top-right {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  display: flex;
+  gap: 10px;
+}
+
+.toggle-btn,
+.logout-btn {
+  background-color: transparent;
+  color: #000;
+  border: 2px solid #000;
+  padding: 6px 12px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-family: 'Nova Round', cursive;
+  transition: background-color 0.3s, color 0.3s, border-color 0.3s;
+}
+
+.toggle-btn:hover,
+.logout-btn:hover {
+  background-color: #000;
+  color: #fff;
+}
+
+/* Judul dan pengguna online */
+h2, h3 {
+  text-align: center;
+  margin-top: 40px;
+}
+
+#onlineUsers ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  text-align: center;
+}
+
+#onlineUsers li {
+  margin: 5px 0;
+}
+
+/* Chatbox */
+#chatbox {
+  height: 300px;
+  overflow-y: auto;
+  background-color: #fff;
+  border-radius: 10px;
+  padding: 10px;
+  margin: 10px 0;
+  border: 2px solid #000;
+  transition: background-color 0.3s, border-color 0.3s;
+}
+
+/* Pesan bubble */
+.message {
+  padding: 8px;
+  margin: 5px 0;
+  border-radius: 10px;
+  word-wrap: break-word;
+  max-width: 80%;
+  font-size: 0.95em;
+  line-height: 1.4;
+}
+
+.message-left {
+  border: 2px solid #000;
+  border-radius: 20px;
+  background-color: #fff;
+  color: #000;
+  text-align: left;
+}
+
+.message-right {
+  border: 2px solid #000;
+  border-radius: 20px;
+  background-color: #fff;
+  color: #000;
+  text-align: right;
+  margin-left: auto;
+}
+
+/* Input teks dan tombol */
+#inputArea {
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+#msgInput {
+  flex: 1;
+  padding: 10px;
+  border-radius: 10px;
+  border: 1px solid #000;
+  background-color: #fff;
+  color: #000;
+  font-family: 'Nova Round', cursive;
+  transition: background-color 0.3s, color 0.3s, border-color 0.3s;
+}
+
+#msgInput::placeholder {
+  color: #000;
+}
+
+#inputArea button {
+  padding: 10px 20px;
+  border-radius: 10px;
+  border: 2px solid #000;
+  background-color: transparent;
+  color: #000;
+  cursor: pointer;
+  font-family: 'Nova Round', cursive;
+  transition: background-color 0.3s, color 0.3s;
+}
+
+#inputArea button:hover {
+  background-color: #000;
+  color: #fff;
+}
+
+/* Upload media */
+#mediaArea {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin-top: 10px;
+}
+
+#mediaInput {
+  flex: 1;
+}
+
+#mediaArea button {
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: 2px solid #000;
+  background-color: transparent;
+  color: #000;
+  cursor: pointer;
+  font-family: 'Nova Round', cursive;
+  transition: background-color 0.3s, color 0.3s;
+}
+
+#mediaArea button:hover {
+  background-color: #000;
+  color: #fff;
+}
+
+/* Tanggal & waktu */
+.datetime-display {
+  text-align: center;
+  font-weight: bold;
+  font-family: 'Nova Round', cursive;
+  font-size: 14px;
+  margin-top: 15px;
+  color: #000;
+  transition: color 0.3s;
+}
+
+/* ======================= */
+/* MODE GELAP STARTS HERE */
+/* ======================= */
+.dark-mode {
+  background-color: #000;
+  color: #fff;
+}
+
+.dark-mode .container {
+  background-color: #000;
+  border-color: #fff;
+  box-shadow: 0 0 10px #fff;
+}
+
+.dark-mode #chatbox {
+  background-color: #000;
+  border-color: #fff;
+}
+
+.dark-mode .message-left {
+  border: 2px solid #fff;
+  background-color: #000;
+  color: #fff;
+}
+
+.dark-mode .message-right {
+  border: 2px solid #fff;
+  background-color: #000;
+  color: #fff;
+}
+
+.dark-mode #msgInput {
+  background-color: #111;
+  color: #fff;
+  border-color: #fff;
+}
+
+.dark-mode #msgInput::placeholder {
+  color: #aaa;
+}
+
+.dark-mode #inputArea button,
+.dark-mode #mediaArea button,
+.dark-mode .logout-btn,
+.dark-mode .toggle-btn {
+  border-color: #fff;
+  color: #fff;
+}
+
+.dark-mode #inputArea button:hover,
+.dark-mode #mediaArea button:hover,
+.dark-mode .logout-btn:hover,
+.dark-mode .toggle-btn:hover {
+  background-color: #fff;
+  color: #000;
+}
+
+.dark-mode .datetime-display {
+  color: #fff;
+}
+
+/* ======================= */
+/* Responsif ringan */
+/* ======================= */
+@media (max-width: 480px) {
+  .container {
+    max-width: 95%;
+    padding: 15px;
+  }
+
+  .message {
+    font-size: 0.9em;
+  }
+
+  #inputArea button,
+  #mediaArea button {
+    padding: 8px 12px;
+  }
+}
