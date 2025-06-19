@@ -58,7 +58,7 @@ app.post('/upload', upload.single('media'), (req, res) => {
   saveMessages(messages);
 
   io.emit('message', messageData);
-  res.json({ success: true, fileUrl });
+  res.json({ success: true, file: fileUrl });
 });
 
 // Load saved messages
