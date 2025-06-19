@@ -1,102 +1,173 @@
 const express = require('express');
-const fs = require('fs');
-const http = require('http');
-const socketIo = require('socket.io');
-const bodyParser = require('body-parser');
-const multer = require('multer');
-const path = require('path');
-
 const app = express();
-const server = http.createServer(app);
-const io = socketIo(server);
-const PORT = 3000;
+const http = require('http').createServer(app);
+const io = require('socket.io')(http);
+const path = require('path');
+const fs = require('fs');
+const multer = require('multer');
+const { v4: uuidv4 } = require('uuid');
 
-app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: true }));
-app.use(express.static('public'));
+const PORT = process.env.PORT || 3000;
+const USERS_FILE = path.join(__dirname, 'users.json');
+const MESSAGES_FILE = path.join(__dirname, 'messages.json');
 
-const upload = multer({ dest: 'public/uploads/' });
+// Middleware
+app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.json());
 
-let users = require('./data/users.json');
-let messages = require('./data/messages.json');
-
-// Middleware session sederhana (tanpa DB, untuk testing 2 user)
-let currentSessions = {}; // { username: lastOnline }
-
-function saveJSON(file, data) {
-  fs.writeFileSync(file, JSON.stringify(data, null, 2));
+// Init users.json & messages.json if not exist
+if (!fs.existsSync(USERS_FILE)) {
+  fs.writeFileSync(USERS_FILE, JSON.stringify({}));
+}
+if (!fs.existsSync(MESSAGES_FILE)) {
+  fs.writeFileSync(MESSAGES_FILE, JSON.stringify([]));
 }
 
-// Auto-hapus pesan > 24 jam
-function cleanOldMessages() {
+// Buat folder uploads jika belum ada
+const uploadDir = path.join(__dirname, 'public', 'uploads');
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir, { recursive: true });
+}
+
+// Konfigurasi multer untuk upload file
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, uploadDir);
+  },
+  filename: (req, file, cb) => {
+    const uniqueName = uuidv4() + path.extname(file.originalname);
+    cb(null, uniqueName);
+  }
+});
+const upload = multer({ storage });
+
+// Endpoint upload media
+app.post('/upload', upload.single('media'), (req, res) => {
+  if (!req.file) return res.status(400).json({ success: false, message: 'Tidak ada file diunggah.' });
+
+  const fileUrl = `/uploads/${req.file.filename}`;
+  const messageData = {
+    id: uuidv4(),
+    user: req.body.user || 'unknown',
+    media: fileUrl,
+    type: req.file.mimetype,
+    time: Date.now()
+  };
+
+  messages.push(messageData);
+  saveMessages(messages);
+
+  io.emit('message', messageData);
+  res.json({ success: true, fileUrl });
+});
+
+// Load saved messages
+let messages = loadMessages();
+let onlineUsers = {};
+
+// Clear messages older than 24 hours every menit
+setInterval(() => {
   const now = Date.now();
-  messages = messages.filter(m => now - m.timestamp <= 86400000);
-  saveJSON('./data/messages.json', messages);
+  messages = messages.filter(m => now - m.time < 24 * 60 * 60 * 1000);
+  saveMessages(messages);
+}, 60 * 1000);
+
+// Helper functions
+function loadUsers() {
+  return JSON.parse(fs.readFileSync(USERS_FILE, 'utf-8'));
 }
 
-setInterval(cleanOldMessages, 60000); // tiap 1 menit
+function saveUsers(users) {
+  fs.writeFileSync(USERS_FILE, JSON.stringify(users, null, 2));
+}
 
-// ROUTES
-app.get('/', (req, res) => res.redirect('/login.html'));
-
-app.post('/signup', (req, res) => {
-  const { username, password } = req.body;
-  if (users.find(u => u.username === username)) {
-    return res.status(400).send('Username sudah digunakan');
+function loadMessages() {
+  try {
+    return JSON.parse(fs.readFileSync(MESSAGES_FILE, 'utf-8'));
+  } catch (err) {
+    console.error("Gagal memuat pesan:", err);
+    return [];
   }
-  users.push({ username, password, lastOnline: null });
-  saveJSON('./data/users.json', users);
-  res.redirect('/login.html');
-});
+}
 
-app.post('/login', (req, res) => {
-  const { username, password } = req.body;
-  const user = users.find(u => u.username === username && u.password === password);
-  if (!user) return res.status(400).send('Login gagal');
-  currentSessions[username] = Date.now();
-  res.redirect(`/index.html?user=${username}`);
-});
+function saveMessages(msgs) {
+  fs.writeFileSync(MESSAGES_FILE, JSON.stringify(msgs, null, 2));
+}
 
-app.get('/messages', (req, res) => {
-  cleanOldMessages();
-  res.json(messages);
-});
-
-app.post('/message', upload.single('media'), (req, res) => {
-  const { sender, text } = req.body;
-  const media = req.file ? `/uploads/${req.file.filename}` : null;
-  const msg = { sender, text, media, timestamp: Date.now() };
-  messages.push(msg);
-  saveJSON('./data/messages.json', messages);
-  io.emit('newMessage', msg);
-  res.sendStatus(200);
-});
-
-app.post('/logout', (req, res) => {
-  const { username } = req.body;
-  const user = users.find(u => u.username === username);
-  if (user) {
-    user.lastOnline = new Date().toISOString();
-    saveJSON('./data/users.json', users);
-  }
-  delete currentSessions[username];
-  res.redirect('/login.html');
-});
-
-app.post('/deleteAll', (req, res) => {
-  messages = [];
-  saveJSON('./data/messages.json', messages);
-  io.emit('clearMessages');
-  res.sendStatus(200);
-});
-
+// Socket.IO
 io.on('connection', socket => {
-  socket.on('userOnline', username => {
-    currentSessions[username] = Date.now();
-    io.emit('updateStatus', currentSessions);
+  let currentUser = null;
+
+  // Signup handler
+  socket.on('signup', data => {
+    const users = loadUsers();
+    if (!data.username || !data.password) {
+      socket.emit('signupResult', { success: false, message: 'Username dan password wajib diisi' });
+      return;
+    }
+    if (users[data.username]) {
+      socket.emit('signupResult', { success: false, message: 'Username sudah dipakai' });
+    } else {
+      users[data.username] = data.password;
+      saveUsers(users);
+      socket.emit('signupResult', { success: true });
+    }
+  });
+
+  // Login handler
+  socket.on('login', data => {
+    const users = loadUsers();
+    if (!data.username || !data.password) {
+      socket.emit('loginResult', { success: false, message: 'Username dan password wajib diisi' });
+      return;
+    }
+    if (users[data.username] && users[data.username] === data.password) {
+      currentUser = data.username;
+      onlineUsers[currentUser] = true;
+
+      socket.emit('loginResult', { success: true, user: currentUser, messages });
+      io.emit('userList', Object.keys(onlineUsers));
+    } else {
+      socket.emit('loginResult', { success: false, message: 'Username atau password salah' });
+    }
+  });
+
+  // Receive message
+  socket.on('message', data => {
+    if (!currentUser || !data.text || data.text.trim() === "") return;
+
+    const messageData = {
+      id: uuidv4(),
+      user: currentUser,
+      text: data.text.trim(),
+      time: Date.now()
+    };
+
+    messages.push(messageData);
+    saveMessages(messages);
+
+    io.emit('message', messageData);
+  });
+
+  // Logout handler
+  socket.on('logout', () => {
+    if (currentUser) {
+      delete onlineUsers[currentUser];
+      io.emit('userList', Object.keys(onlineUsers));
+      currentUser = null;
+    }
+  });
+
+  // Disconnect handler
+  socket.on('disconnect', () => {
+    if (currentUser) {
+      delete onlineUsers[currentUser];
+      io.emit('userList', Object.keys(onlineUsers));
+      currentUser = null;
+    }
   });
 });
 
-server.listen(PORT, () => {
-  console.log(`Server running at http://localhost:${PORT}`);
+http.listen(PORT, () => {
+  console.log(`Server berjalan di port ${PORT}`);
 });
