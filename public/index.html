@@ -6,7 +6,6 @@
   <title>Hai</title>
   <script src="/socket.io/socket.io.js"></script>
   <style>
-
     * {
       margin: 0;
       padding: 0;
@@ -290,25 +289,21 @@
       .container {
         flex-direction: column;
       }
-
       .sidebar {
         width: 100%;
-        height: auto;
         max-height: 200px;
         overflow-y: auto;
       }
-
       .message-bubble {
         max-width: 85%;
       }
-
       .chat-header h2 {
         font-size: 18px;
       }
-
       .input-area {
         flex-direction: column;
       }
+    }
   </style>
 </head>
 <body>
@@ -320,7 +315,7 @@
 
     <div class="chat-area">
       <div class="chat-header">
-        <h2>Hai,Apa Kabar?</h2>
+        <h2>Hai, Apa Kabar?</h2>
         <button class="clear-btn" id="clearBtn">Hapus Semua Pesan</button>
       </div>
 
@@ -329,7 +324,7 @@
 
       <div class="input-area">
         <input type="text" id="messageInput" class="message-input" placeholder="Ketik pesan..." disabled />
-        <input type="file" id="fileInput" class="file-input" accept="image/*,video/*,.pdf,.doc,.docx,.txt" />
+        <input type="file" id="fileInput" class="file-input" accept="image/*,video/*,.pdf,.doc,.docx,.txt,.mp3" />
         <button class="media-btn" id="mediaBtn" disabled>📎</button>
         <button class="send-btn" id="sendBtn" disabled>Kirim</button>
       </div>
@@ -346,47 +341,36 @@
   </div>
 
   <script>
-    const socket = io();
-    let currentUser = null;
-    let typingTimer = null;
-
-    const loginModal = document.getElementById('loginModal');
-    const usernameInput = document.getElementById('usernameInput');
-    const joinBtn = document.getElementById('joinBtn');
-    const errorMessage = document.getElementById('errorMessage');
-    const messageInput = document.getElementById('messageInput');
-    const sendBtn = document.getElementById('sendBtn');
-    const mediaBtn = document.getElementById('mediaBtn');
-    const fileInput = document.getElementById('fileInput');
-    const clearBtn = document.getElementById('clearBtn');
-    const messagesContainer = document.getElementById('messagesContainer');
-    const userList = document.getElementById('userList');
-    const typingIndicator = document.getElementById('typingIndicator');
+    const socket = io(), loginModal = document.getElementById('loginModal');
+    let currentUser = null, typingTimer = null;
+    const usernameInput = document.getElementById('usernameInput'),
+          joinBtn = document.getElementById('joinBtn'),
+          errorMessage = document.getElementById('errorMessage'),
+          messageInput = document.getElementById('messageInput'),
+          sendBtn = document.getElementById('sendBtn'),
+          mediaBtn = document.getElementById('mediaBtn'),
+          fileInput = document.getElementById('fileInput'),
+          clearBtn = document.getElementById('clearBtn'),
+          messagesContainer = document.getElementById('messagesContainer'),
+          userList = document.getElementById('userList'),
+          typingIndicator = document.getElementById('typingIndicator');
 
     joinBtn.addEventListener('click', () => {
-      const username = usernameInput.value.trim();
-      if (username) {
-        socket.emit('join', username);
-      }
+      const u = usernameInput.value.trim();
+      if(u) socket.emit('join', u);
     });
+    usernameInput.addEventListener('keypress', e => e.key==='Enter' && joinBtn.click());
 
-    usernameInput.addEventListener('keypress', (e) => {
-      if (e.key === 'Enter') joinBtn.click();
-    });
-
-    function sendMessage() {
-      const text = messageInput.value.trim();
-      if (text) {
-        socket.emit('new_message', { text, type: 'text' });
+    function sendMsg() {
+      const t = messageInput.value.trim();
+      if(t) {
+        socket.emit('new_message', { text: t, type: 'text' });
         messageInput.value = '';
         socket.emit('typing', false);
       }
     }
-
-    sendBtn.addEventListener('click', sendMessage);
-    messageInput.addEventListener('keypress', (e) => {
-      if (e.key === 'Enter') sendMessage();
-    });
+    sendBtn.addEventListener('click', sendMsg);
+    messageInput.addEventListener('keypress', e => e.key==='Enter' && sendMsg());
 
     messageInput.addEventListener('input', () => {
       socket.emit('typing', true);
@@ -395,122 +379,89 @@
     });
 
     mediaBtn.addEventListener('click', () => fileInput.click());
-    fileInput.addEventListener('change', (e) => {
+    fileInput.addEventListener('change', e => {
       const file = e.target.files[0];
-      if (file) {
-        const formData = new FormData();
-        formData.append('media', file);
-        fetch('/upload', { method: 'POST', body: formData })
-          .then(res => res.json())
+      if(file) {
+        const fd = new FormData();
+        fd.append('media', file);
+        fetch('/upload', { method: 'POST', body: fd })
+          .then(r => r.json())
           .then(data => {
-            if (data.error) {
-              showNotification(data.error, 'error');
-            } else {
-              socket.emit('new_message', {
-                text: `Mengirim file: ${data.originalName}`,
-                media: {
-                  filename: data.filename,
-                  originalName: data.originalName,
-                  path: data.path,
-                  size: data.size
-                },
-                type: 'media'
-              });
-            }
-          }).catch(() => showNotification('Gagal mengunggah file', 'error'));
+            if(data.error) showNotification(data.error, 'error');
+            else socket.emit('new_message', {
+              text: `Mengirim file: ${data.originalName}`,
+              media: data, type: 'media'
+            });
+          }).catch(()=>showNotification('Gagal upload', 'error'));
       }
     });
 
     clearBtn.addEventListener('click', () => {
-      if (confirm('Apakah Anda yakin ingin menghapus semua pesan?')) {
-        socket.emit('clear_messages');
-      }
+      if(confirm('Yakin hapus semua pesan?')) socket.emit('clear_messages');
     });
 
-    socket.on('room_full', () => errorMessage.textContent = 'Chat room penuh! Maksimal 2 user.');
-    socket.on('username_taken', () => errorMessage.textContent = 'Username sudah digunakan!');
+    socket.on('room_full', () => errorMessage.textContent='Room penuh');
+    socket.on('username_taken', () => errorMessage.textContent='Username sudah digunakan');
 
-    socket.on('load_messages', (messages) => {
+    socket.on('load_messages', msgs => {
       currentUser = usernameInput.value.trim();
       loginModal.style.display = 'none';
-      messageInput.disabled = false;
-      sendBtn.disabled = false;
-      mediaBtn.disabled = false;
-
-      messages.forEach((msg, idx) => {
-        const isLast = idx === messages.length - 1;
-        displayMessage(msg, isLast);
-      });
-
+      messageInput.disabled=false; sendBtn.disabled=false; mediaBtn.disabled=false;
+      msgs.forEach((m,i) => displayMessage(m, i===msgs.length-1));
       showNotification('Berhasil masuk ke chat!');
     });
-
-    socket.on('message_received', (message) => {
-      displayMessage(message, true);
-    });
-
+    socket.on('message_received', m => displayMessage(m,true));
     socket.on('messages_cleared', () => {
-      messagesContainer.innerHTML = '';
-      showNotification('Semua pesan telah dihapus!');
+      messagesContainer.innerHTML=''; showNotification('Semua pesan dihapus');
     });
-
     socket.on('user_list_update', updateUserList);
-    socket.on('user_joined', username => showNotification(`${username} bergabung ke chat`));
-    socket.on('user_left', username => showNotification(`${username} keluar dari chat`));
-
-    socket.on('messages_cleaned', (data) => {
-      if (data.removedCount > 0) {
-        showNotification(`${data.removedCount} pesan lama (>24 jam) dihapus`);
+    socket.on('user_joined', name => showNotification(`${name} bergabung`));
+    socket.on('user_left', name => showNotification(`${name} keluar`));
+    socket.on('messages_cleaned', d => {
+      if(d.removedCount>0){
+        showNotification(`${d.removedCount} pesan >24 jam dihapus`);
         location.reload();
       }
     });
-
-    socket.on('user_typing', (data) => {
-      typingIndicator.textContent = data.isTyping ? `${data.username} sedang mengetik...` : '';
+    socket.on('user_typing', d => {
+      typingIndicator.textContent = d.isTyping ? `${d.username} sedang mengetik...` : '';
     });
 
-    function displayMessage(message, autoScroll = true) {
-      const messageDiv = document.createElement('div');
-      messageDiv.className = `message ${message.username === currentUser ? 'own' : ''}`;
-      const timestamp = new Date(message.timestamp).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
-
-      let mediaContent = '';
-      if (message.media) {
-        const ext = message.media.filename.split('.').pop().toLowerCase();
-        if (['jpg', 'jpeg', 'png', 'gif'].includes(ext)) {
-          mediaContent = `<div class="message-media"><img src="${message.media.path}" alt="${message.media.originalName}" /></div>`;
-        } else if (['mp4', 'mov', 'avi'].includes(ext)) {
-          mediaContent = `<div class="message-media"><video controls><source src="${message.media.path}" type="video/${ext}"></video></div>`;
-        } else {
-          mediaContent = `<div class="message-media"><a href="${message.media.path}" target="_blank">📎 ${message.media.originalName}</a></div>`;
-        }
+    function displayMessage(m, autoScroll=true) {
+      const div = document.createElement('div');
+      div.className = `message ${m.username===currentUser?'own':''}`;
+      const time = new Date(m.timestamp).toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'});
+      let media='';
+      if(m.media) {
+        const ext= m.media.filename.split('.').pop().toLowerCase();
+        if(['jpg','png','gif','jpeg'].includes(ext))
+          media=`<div class="message-media"><img src="${m.media.path}" alt="${m.media.originalName}"/></div>`;
+        else if(['mp4','mov','avi'].includes(ext))
+          media=`<div class="message-media"><video controls><source src="${m.media.path}" type="video/${ext}"></video></div>`;
+        else
+          media=`<div class="message-media"><a href="${m.media.path}" target="_blank">📎 ${m.media.originalName}</a></div>`;
       }
-
-      messageDiv.innerHTML = `
-        <div class="message-bubble">${message.text}${mediaContent}</div>
-        <div class="message-info">${message.username}<br>${timestamp}</div>
-      `;
-
-      messagesContainer.appendChild(messageDiv);
-      if (autoScroll) messagesContainer.scrollTop = messagesContainer.scrollHeight;
+      div.innerHTML = `<div class="message-bubble">${m.text}${media}</div><div class="message-info">${m.username}<br>${time}</div>`;
+      messagesContainer.appendChild(div);
+      if(autoScroll) messagesContainer.scrollTop = messagesContainer.scrollHeight;
     }
 
-    function updateUserList(users) {
-      userList.innerHTML = '';
-      users.forEach(user => {
-        const div = document.createElement('div');
-        div.className = 'user-item';
-        div.innerHTML = `<div class="status-indicator status-${user.status}"></div><span>${user.username}</span>`;
-        userList.appendChild(div);
+    function updateUserList(arr) {
+      userList.innerHTML='';
+      arr.forEach(u => {
+        const d=document.createElement('div');
+        d.className='user-item';
+        d.innerHTML=`<div class="status-indicator status-${u.status}"></div><span>${u.username}</span>`;
+        userList.appendChild(d);
       });
     }
 
-    function showNotification(msg, type = 'success') {
-      const noti = document.createElement('div');
-      noti.className = `notification ${type}`;
-      noti.textContent = msg;
-      document.body.appendChild(noti);
-      setTimeout(() => noti.remove(), 3000);
+    function showNotification(msg, type='success') {
+      const n=document.createElement('div');
+      n.className=`notification ${type}`;
+      n.textContent=msg;
+      document.body.appendChild(n);
+      setTimeout(()=>n.remove(),3000);
     }
   </script>
 </body>
