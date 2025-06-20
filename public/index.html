@@ -1,211 +1,617 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Modak&family=Barrio&family=Nova+Round&display=swap" rel="stylesheet" />
-  <link rel="manifest" href="/manifest.json" />
-  <link rel="icon" href="/icon-512.png" />
-  <meta name="theme-color" content="#000000" />
-  <link rel="stylesheet" href="style.css" />
-  <title>SayHai</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple Web Chat</title>
+    <script src="/socket.io/socket.io.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .container {
+            display: flex;
+            height: 100vh;
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+        }
+
+        .sidebar {
+            width: 300px;
+            background: #2c3e50;
+            color: white;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .sidebar h3 {
+            margin-bottom: 20px;
+            color: #ecf0f1;
+            border-bottom: 2px solid #34495e;
+            padding-bottom: 10px;
+        }
+
+        .user-list {
+            flex: 1;
+        }
+
+        .user-item {
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            margin-bottom: 10px;
+            background: #34495e;
+            border-radius: 8px;
+        }
+
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 10px;
+        }
+
+        .status-online {
+            background: #2ecc71;
+        }
+
+        .status-offline {
+            background: #95a5a6;
+        }
+
+        .chat-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .chat-header {
+            background: #34495e;
+            color: white;
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .clear-btn {
+            background: #e74c3c;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .clear-btn:hover {
+            background: #c0392b;
+        }
+
+        .messages-container {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            background: #ecf0f1;
+        }
+
+        .message {
+            margin-bottom: 15px;
+            display: flex;
+            align-items: flex-end;
+        }
+
+        .message.own {
+            flex-direction: row-reverse;
+        }
+
+        .message-bubble {
+            max-width: 70%;
+            padding: 12px 16px;
+            border-radius: 18px;
+            word-wrap: break-word;
+            position: relative;
+        }
+
+        .message.own .message-bubble {
+            background: #3498db;
+            color: white;
+            border-bottom-right-radius: 4px;
+        }
+
+        .message:not(.own) .message-bubble {
+            background: white;
+            color: #2c3e50;
+            border-bottom-left-radius: 4px;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+        }
+
+        .message-info {
+            font-size: 11px;
+            opacity: 0.7;
+            margin: 0 10px;
+            min-width: 120px;
+        }
+
+        .message.own .message-info {
+            text-align: right;
+        }
+
+        .message-media {
+            max-width: 100%;
+            border-radius: 8px;
+            margin-top: 8px;
+        }
+
+        .message-media img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 8px;
+        }
+
+        .message-media video {
+            max-width: 100%;
+            height: auto;
+            border-radius: 8px;
+        }
+
+        .message-media a {
+            color: inherit;
+            text-decoration: none;
+            padding: 8px 12px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 4px;
+            display: inline-block;
+            margin-top: 5px;
+        }
+
+        .input-area {
+            padding: 20px;
+            background: white;
+            border-top: 1px solid #bdc3c7;
+            display: flex;
+            gap: 10px;
+        }
+
+        .message-input {
+            flex: 1;
+            padding: 12px 16px;
+            border: 2px solid #bdc3c7;
+            border-radius: 25px;
+            outline: none;
+            font-size: 14px;
+        }
+
+        .message-input:focus {
+            border-color: #3498db;
+        }
+
+        .send-btn, .media-btn {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        .send-btn {
+            background: #3498db;
+            color: white;
+        }
+
+        .send-btn:hover {
+            background: #2980b9;
+        }
+
+        .media-btn {
+            background: #95a5a6;
+            color: white;
+        }
+
+        .media-btn:hover {
+            background: #7f8c8d;
+        }
+
+        .typing-indicator {
+            padding: 10px 20px;
+            font-style: italic;
+            color: #7f8c8d;
+            font-size: 12px;
+        }
+
+        .login-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .login-form {
+            background: white;
+            padding: 40px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            text-align: center;
+            min-width: 300px;
+        }
+
+        .login-form h2 {
+            margin-bottom: 20px;
+            color: #2c3e50;
+        }
+
+        .login-form input {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 20px;
+            border: 2px solid #bdc3c7;
+            border-radius: 6px;
+            font-size: 16px;
+        }
+
+        .login-form button {
+            width: 100%;
+            padding: 12px;
+            background: #3498db;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        .login-form button:hover {
+            background: #2980b9;
+        }
+
+        .error-message {
+            color: #e74c3c;
+            margin-bottom: 15px;
+            font-size: 14px;
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #2ecc71;
+            color: white;
+            padding: 15px 20px;
+            border-radius: 6px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            z-index: 1001;
+            animation: slideIn 0.3s ease;
+        }
+
+        .notification.error {
+            background: #e74c3c;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                flex-direction: column;
+            }
+            
+            .sidebar {
+                width: 100%;
+                height: auto;
+                max-height: 200px;
+                overflow-y: auto;
+            }
+            
+            .message-bubble {
+                max-width: 85%;
+            }
+        }
+    </style>
 </head>
 <body>
-
-  <div class="container">
-    <div class="top-right">
-      <button class="toggle-btn" onclick="toggleDarkMode()" id="modeIcon">🌞</button>
-      <button class="logout-btn" onclick="logout()">Logout</button>
+    <div class="container">
+        <div class="sidebar">
+            <h3>Users Online</h3>
+            <div class="user-list" id="userList">
+                <!-- Users will be populated here -->
+            </div>
+        </div>
+        
+        <div class="chat-area">
+            <div class="chat-header">
+                <h2>Hai, Apa Kabar?</h2>
+                <button class="clear-btn" id="clearBtn">Hapus Semua Pesan</button>
+            </div>
+            
+            <div class="messages-container" id="messagesContainer">
+                <!-- Messages will appear here -->
+            </div>
+            
+            <div class="typing-indicator" id="typingIndicator"></div>
+            
+            <div class="input-area">
+                <input type="text" id="messageInput" class="message-input" placeholder="Ketik pesan..." disabled>
+                <input type="file" id="fileInput" class="file-input" accept="image/*,video/*,.pdf,.doc,.docx,.txt">
+                <button class="media-btn" id="mediaBtn" disabled>📎</button>
+                <button class="send-btn" id="sendBtn" disabled>Kirim</button>
+            </div>
+        </div>
     </div>
 
-    <h2 id="welcome"></h2>
-
-    <div>
-      <h3>Pengguna Online:</h3>
-      <div id="onlineUsers"></div>
+    <!-- Login Modal -->
+    <div class="login-modal" id="loginModal">
+        <div class="login-form">
+            <h2>Masuk ke Chat</h2>
+            <div class="error-message" id="errorMessage"></div>
+            <input type="text" id="usernameInput" placeholder="Masukkan username" maxlength="20">
+            <button id="joinBtn">Masuk Chat</button>
+        </div>
     </div>
 
-    <div id="chatbox"></div>
+    <script>
+        const socket = io();
+        let currentUser = null;
+        let typingTimer = null;
 
-    <!-- Upload media -->
-    <div id="mediaArea">
-      <input type="file" id="mediaInput" />
-      <button onclick="uploadMedia()">Kirim Media</button>
-    </div>
+        // DOM elements
+        const loginModal = document.getElementById('loginModal');
+        const usernameInput = document.getElementById('usernameInput');
+        const joinBtn = document.getElementById('joinBtn');
+        const errorMessage = document.getElementById('errorMessage');
+        const messageInput = document.getElementById('messageInput');
+        const sendBtn = document.getElementById('sendBtn');
+        const mediaBtn = document.getElementById('mediaBtn');
+        const fileInput = document.getElementById('fileInput');
+        const clearBtn = document.getElementById('clearBtn');
+        const messagesContainer = document.getElementById('messagesContainer');
+        const userList = document.getElementById('userList');
+        const typingIndicator = document.getElementById('typingIndicator');
 
-    <!-- Kirim pesan teks -->
-    <div id="inputArea">
-      <input type="text" id="msgInput" placeholder="Tulis pesan..." autocomplete="off" />
-      <button onclick="sendMessage()">Kirim</button>
-    </div>
+        // Join chat
+        joinBtn.addEventListener('click', () => {
+            const username = usernameInput.value.trim();
+            if (username) {
+                socket.emit('join', username);
+            }
+        });
 
-    <div id="datetime" class="datetime-display"></div>
-  </div>
+        // Enter key for join
+        usernameInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                joinBtn.click();
+            }
+        });
 
-  <script src="/socket.io/socket.io.js"></script>
-  <script>
-    function updateDateTime() {
-      const now = new Date();
-      const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-      const date = now.toLocaleDateString('id-ID', options);
-      const time = now.toLocaleTimeString('id-ID');
-      document.getElementById('datetime').textContent = `${date} | ${time}`;
-    }
-    setInterval(updateDateTime, 1000);
-    updateDateTime();
-
-    if ("Notification" in window && Notification.permission !== "granted") {
-      Notification.requestPermission();
-    }
-
-    const savedTheme = localStorage.getItem('theme');
-    if (savedTheme === 'dark') document.body.classList.add('dark-mode');
-    updateToggleIcon(savedTheme || 'light');
-
-    const username = localStorage.getItem('username');
-    const password = localStorage.getItem('password');
-    if (!username || !password) {
-      window.location.href = 'login.html';
-    }
-
-    document.getElementById('welcome').innerText = "Hai, " + username;
-
-    const socket = io();
-    socket.emit('login', { username, password });
-
-    socket.on('loginResult', data => {
-      if (!data.success) {
-        alert(data.message || 'Login gagal.');
-        localStorage.removeItem('username');
-        localStorage.removeItem('password');
-        window.location.href = 'login.html';
-        return;
-      }
-      if (data.messages && Array.isArray(data.messages)) {
-        data.messages.forEach(msg => appendMessage(msg));
-      }
-    });
-
-    socket.on('message', data => {
-      appendMessage(data);
-      if (data.user !== username && Notification.permission === "granted") {
-        new Notification("Ping");
-      }
-    });
-
-    socket.on('userList', users => {
-      const userList = users.map(user => `<li>${escapeHtml(user)} 🔵</li>`).join('');
-      document.getElementById('onlineUsers').innerHTML = "<ul>" + userList + "</ul>";
-    });
-
-    function appendMessage(data) {
-      const div = document.createElement('div');
-      div.classList.add('message', data.user === username ? 'message-right' : 'message-left');
-
-      const time = new Date(data.time).toLocaleTimeString('id-ID', {
-        hour: '2-digit',
-        minute: '2-digit'
-      });
-
-      let content = `<strong>${escapeHtml(data.user)}:</strong><br>`;
-
-      if (data.media) {
-        const fileType = data.type || '';
-        if (fileType.startsWith('image/')) {
-          content += `<img src="${data.media}" style="max-width: 200px; border-radius: 10px;" />`;
-        } else if (fileType.startsWith('video/')) {
-          content += `<video controls style="max-width: 200px; border-radius: 10px;">
-                        <source src="${data.media}" type="${fileType}">
-                        Browser tidak mendukung video.
-                      </video>`;
-        } else if (fileType.startsWith('audio/')) {
-          content += `<audio controls>
-                        <source src="${data.media}" type="${fileType}">
-                        Browser tidak mendukung audio.
-                      </audio>`;
-        } else {
-          const filename = data.media.split('/').pop();
-          content += `<a href="${data.media}" download target="_blank">📁 Unduh ${filename}</a>`;
+        // Send message
+        function sendMessage() {
+            const text = messageInput.value.trim();
+            if (text) {
+                socket.emit('new_message', { text, type: 'text' });
+                messageInput.value = '';
+                socket.emit('typing', false);
+            }
         }
-      } else if (data.text) {
-        content += `${escapeHtml(data.text)}`;
-      }
 
-      content += `<br><span style="font-size: 0.75em; color: gray;">🕒 ${time}</span>`;
+        sendBtn.addEventListener('click', sendMessage);
 
-      div.innerHTML = content;
+        messageInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
 
-      const chatbox = document.getElementById('chatbox');
-      chatbox.appendChild(div);
-      chatbox.scrollTop = chatbox.scrollHeight;
-    }
+        // Typing indicator
+        messageInput.addEventListener('input', () => {
+            socket.emit('typing', true);
+            
+            clearTimeout(typingTimer);
+            typingTimer = setTimeout(() => {
+                socket.emit('typing', false);
+            }, 1000);
+        });
 
-    function sendMessage() {
-      const input = document.getElementById('msgInput');
-      const text = input.value.trim();
-      if (text) {
-        socket.emit('message', { text });
-        input.value = '';
-      }
-    }
+        // File upload
+        mediaBtn.addEventListener('click', () => {
+            fileInput.click();
+        });
 
-    function uploadMedia() {
-      const fileInput = document.getElementById('mediaInput');
-      const file = fileInput.files[0];
-      if (!file) return alert("Pilih file media terlebih dahulu.");
+        fileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const formData = new FormData();
+                formData.append('media', file);
 
-      const formData = new FormData();
-      formData.append('media', file);
-      formData.append('user', username);
+                fetch('/upload', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        showNotification(data.error, 'error');
+                    } else {
+                        socket.emit('new_message', {
+                            text: `Mengirim file: ${data.originalName}`,
+                            media: {
+                                filename: data.filename,
+                                originalName: data.originalName,
+                                path: data.path,
+                                size: data.size
+                            },
+                            type: 'media'
+                        });
+                    }
+                })
+                .catch(error => {
+                    showNotification('Error uploading file', 'error');
+                });
+            }
+        });
 
-      fetch('/upload', {
-        method: 'POST',
-        body: formData
-      })
-      .then(res => res.json())
-      .then(data => {
-        if (!data.success) {
-          alert('Gagal upload media.');
+        // Clear messages
+        clearBtn.addEventListener('click', () => {
+            if (confirm('Apakah Anda yakin ingin menghapus semua pesan?')) {
+                socket.emit('clear_messages');
+            }
+        });
+
+        // Socket events
+        socket.on('room_full', () => {
+            errorMessage.textContent = 'Chat room penuh! Maksimal 2 user.';
+        });
+
+        socket.on('username_taken', () => {
+            errorMessage.textContent = 'Username sudah digunakan!';
+        });
+
+        socket.on('load_messages', (messages) => {
+            currentUser = usernameInput.value.trim();
+            loginModal.style.display = 'none';
+            
+            // Enable inputs
+            messageInput.disabled = false;
+            sendBtn.disabled = false;
+            mediaBtn.disabled = false;
+            
+            // Load existing messages
+            messages.forEach(message => {
+                displayMessage(message);
+            });
+            
+            showNotification('Berhasil masuk ke chat!');
+        });
+
+        socket.on('message_received', (message) => {
+            displayMessage(message);
+        });
+
+        socket.on('messages_cleared', () => {
+            messagesContainer.innerHTML = '';
+            showNotification('Semua pesan telah dihapus!');
+        });
+
+        socket.on('user_list_update', (users) => {
+            updateUserList(users);
+        });
+
+        socket.on('user_joined', (username) => {
+            showNotification(`${username} bergabung ke chat`);
+        });
+
+        socket.on('user_left', (username) => {
+            showNotification(`${username} keluar dari chat`);
+        });
+
+        socket.on('messages_cleaned', (data) => {
+            if (data.removedCount > 0) {
+                showNotification(`${data.removedCount} pesan lama (>24 jam) telah dihapus otomatis`);
+                // Reload messages to reflect the cleanup
+                location.reload();
+            }
+        });
+
+        socket.on('user_typing', (data) => {
+            if (data.isTyping) {
+                typingIndicator.textContent = `${data.username} sedang mengetik...`;
+            } else {
+                typingIndicator.textContent = '';
+            }
+        });
+
+        // Helper functions
+        function displayMessage(message) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${message.username === currentUser ? 'own' : ''}`;
+            
+            const timestamp = new Date(message.timestamp).toLocaleTimeString('id-ID', {
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+
+            let mediaContent = '';
+            if (message.media) {
+                const ext = message.media.filename.split('.').pop().toLowerCase();
+                if (['jpg', 'jpeg', 'png', 'gif'].includes(ext)) {
+                    mediaContent = `<div class="message-media">
+                        <img src="${message.media.path}" alt="${message.media.originalName}">
+                    </div>`;
+                } else if (['mp4', 'mov', 'avi'].includes(ext)) {
+                    mediaContent = `<div class="message-media">
+                        <video controls>
+                            <source src="${message.media.path}" type="video/${ext}">
+                        </video>
+                    </div>`;
+                } else {
+                    mediaContent = `<div class="message-media">
+                        <a href="${message.media.path}" target="_blank">📎 ${message.media.originalName}</a>
+                    </div>`;
+                }
+            }
+
+            messageDiv.innerHTML = `
+                <div class="message-bubble">
+                    ${message.text}
+                    ${mediaContent}
+                </div>
+                <div class="message-info">
+                    ${message.username}<br>
+                    ${timestamp}
+                </div>
+            `;
+
+            messagesContainer.appendChild(messageDiv);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
         }
-      })
-      .catch(err => {
-        console.error(err);
-        alert('Upload error.');
-      });
 
-      fileInput.value = '';
-    }
+        function updateUserList(users) {
+            userList.innerHTML = '';
+            users.forEach(user => {
+                const userDiv = document.createElement('div');
+                userDiv.className = 'user-item';
+                userDiv.innerHTML = `
+                    <div class="status-indicator status-${user.status}"></div>
+                    <span>${user.username}</span>
+                `;
+                userList.appendChild(userDiv);
+            });
+        }
 
-    function logout() {
-      localStorage.removeItem('username');
-      localStorage.removeItem('password');
-      socket.emit('logout');
-      window.location.href = 'login.html';
-    }
+        function showNotification(message, type = 'success') {
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+            notification.textContent = message;
+            document.body.appendChild(notification);
 
-    function toggleDarkMode() {
-      document.body.classList.toggle('dark-mode');
-      const mode = document.body.classList.contains('dark-mode') ? 'dark' : 'light';
-      localStorage.setItem('theme', mode);
-      updateToggleIcon(mode);
-    }
-
-    function updateToggleIcon(mode) {
-      const icon = document.getElementById('modeIcon');
-      icon.textContent = mode === 'dark' ? '🌜' : '🌞';
-    }
-
-    function escapeHtml(str) {
-      return str.replace(/[&<>"']/g, m => ({
-        '&': '&amp;',
-        '<': '&lt;',
-        '>': '&gt;',
-        '"': '&quot;',
-        "'": '&#039;'
-      })[m]);
-    }
-  </script>
+            setTimeout(() => {
+                notification.remove();
+            }, 3000);
+        }
+    </script>
 </body>
 </html>
