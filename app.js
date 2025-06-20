@@ -13,14 +13,13 @@ const io = socketIo(server);
 app.use(express.static('public'));
 app.use(express.json());
 
-// Messages file path
 const MESSAGES_FILE = path.join(__dirname, 'messages.json');
 
-// Setup multer for file uploads
+// Setup multer
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
     const uploadDir = 'public/uploads';
-    if (!fs.existsSync(uploadDir)){
+    if (!fs.existsSync(uploadDir)) {
       fs.mkdirSync(uploadDir, { recursive: true });
     }
     cb(null, uploadDir);
@@ -31,15 +30,14 @@ const storage = multer.diskStorage({
   }
 });
 
-const upload = multer({ 
+const upload = multer({
   storage: storage,
-  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
+  limits: { fileSize: 10 * 1024 * 1024 },
   fileFilter: function (req, file, cb) {
-    // Allow images, videos, and common document types
     const allowedTypes = /jpeg|jpg|png|gif|mp4|mov|avi|pdf|doc|docx|txt/;
     const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
     const mimetype = allowedTypes.test(file.mimetype);
-    
+
     if (mimetype && extname) {
       return cb(null, true);
     } else {
@@ -48,7 +46,6 @@ const upload = multer({
   }
 });
 
-// Store connected users and messages
 let connectedUsers = {};
 let messages = [];
 const MAX_USERS = 2;
@@ -61,8 +58,6 @@ function loadMessages() {
       const data = fs.readFileSync(MESSAGES_FILE, 'utf8');
       messages = JSON.parse(data);
       console.log(`Loaded ${messages.length} messages from file`);
-      
-      // Clean expired messages on startup
       cleanExpiredMessages();
     } else {
       messages = [];
@@ -83,45 +78,61 @@ function saveMessages() {
   }
 }
 
-// Clean messages older than 24 hours
+// Fungsi untuk menghapus file media
+function deleteMediaFile(message) {
+  if (message.media && message.media.path) {
+    const filePath = path.join(__dirname, 'public', message.media.path);
+    if (fs.existsSync(filePath)) {
+      fs.unlink(filePath, (err) => {
+        if (err) {
+          console.error(`Gagal menghapus file ${filePath}:`, err);
+        } else {
+          console.log(`Media dihapus: ${filePath}`);
+        }
+      });
+    }
+  }
+}
+
+// Hapus pesan > 24 jam + file media
 function cleanExpiredMessages() {
   const now = new Date();
-  const initialCount = messages.length;
-  
-  messages = messages.filter(message => {
-    const messageAge = now - new Date(message.timestamp);
-    const hoursSinceMessage = messageAge / (1000 * 60 * 60);
-    return hoursSinceMessage < MESSAGE_EXPIRY_HOURS;
-  });
-  
-  const removedCount = initialCount - messages.length;
+  const newMessages = [];
+
+  for (const message of messages) {
+    const ageInHours = (now - new Date(message.timestamp)) / (1000 * 60 * 60);
+    if (ageInHours < MESSAGE_EXPIRY_HOURS) {
+      newMessages.push(message);
+    } else {
+      deleteMediaFile(message);
+    }
+  }
+
+  const removedCount = messages.length - newMessages.length;
+  messages = newMessages;
+
   if (removedCount > 0) {
-    console.log(`Removed ${removedCount} expired messages (older than ${MESSAGE_EXPIRY_HOURS}h)`);
+    console.log(`Removed ${removedCount} expired messages`);
     saveMessages();
-    
-    // Notify all connected users about message cleanup
     io.emit('messages_cleaned', { removedCount });
   }
 }
 
-// Auto-cleanup expired messages every hour
-setInterval(cleanExpiredMessages, 60 * 60 * 1000); // Run every hour
-
-// Load messages on startup
+// Jalankan setiap jam
+setInterval(cleanExpiredMessages, 60 * 60 * 1000);
 loadMessages();
 
-// Routes
+// ROUTES
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-// File upload endpoint
 app.post('/upload', upload.single('media'), (req, res) => {
   if (!req.file) {
     return res.status(400).json({ error: 'No file uploaded' });
   }
-  
-  res.json({ 
+
+  res.json({
     filename: req.file.filename,
     originalName: req.file.originalname,
     size: req.file.size,
@@ -129,47 +140,35 @@ app.post('/upload', upload.single('media'), (req, res) => {
   });
 });
 
-// Socket.IO connection handling
+// SOCKET.IO
 io.on('connection', (socket) => {
   console.log('User connected:', socket.id);
 
-  // Handle user join
   socket.on('join', (username) => {
-    // Check if room is full
     if (Object.keys(connectedUsers).length >= MAX_USERS) {
       socket.emit('room_full');
       return;
     }
 
-    // Check if username already exists
-    const existingUser = Object.values(connectedUsers).find(user => user.username === username);
-    if (existingUser) {
+    const isTaken = Object.values(connectedUsers).some(user => user.username === username);
+    if (isTaken) {
       socket.emit('username_taken');
       return;
     }
 
-    // Add user to connected users
     connectedUsers[socket.id] = {
-      username: username,
+      username,
       status: 'online',
       joinedAt: new Date()
     };
 
     socket.username = username;
-    
-    // Send existing messages to new user
     socket.emit('load_messages', messages);
-    
-    // Broadcast user list update
     io.emit('user_list_update', Object.values(connectedUsers));
-    
-    // Notify others about new user
     socket.broadcast.emit('user_joined', username);
-    
-    console.log(`${username} joined the chat`);
+    console.log(`${username} joined`);
   });
 
-  // Handle new message
   socket.on('new_message', (data) => {
     if (!socket.username) return;
 
@@ -183,50 +182,34 @@ io.on('connection', (socket) => {
     };
 
     messages.push(message);
-    
-    // Save messages to file
     saveMessages();
-    
-    // Broadcast message to all users
     io.emit('message_received', message);
   });
 
-  // Handle typing indicator
   socket.on('typing', (isTyping) => {
     if (!socket.username) return;
-    
     socket.broadcast.emit('user_typing', {
       username: socket.username,
-      isTyping: isTyping
+      isTyping
     });
   });
 
-  // Handle clear all messages
   socket.on('clear_messages', () => {
     if (!socket.username) return;
-    
+
+    messages.forEach(deleteMediaFile);
     messages = [];
-    
-    // Save empty messages array to file
     saveMessages();
-    
     io.emit('messages_cleared');
-    
-    console.log(`${socket.username} cleared all messages`);
+    console.log(`${socket.username} cleared messages`);
   });
 
-  // Handle disconnect
   socket.on('disconnect', () => {
     if (socket.username) {
       delete connectedUsers[socket.id];
-      
-      // Broadcast user list update
       io.emit('user_list_update', Object.values(connectedUsers));
-      
-      // Notify others about user leaving
       socket.broadcast.emit('user_left', socket.username);
-      
-      console.log(`${socket.username} left the chat`);
+      console.log(`${socket.username} left`);
     }
   });
 });
@@ -234,5 +217,4 @@ io.on('connection', (socket) => {
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
-  console.log(`Open http://localhost:${PORT} in your browser`);
 });
