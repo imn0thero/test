@@ -1,5 +1,4 @@
-<!DOCTYPE html>
-<html lang="id">
+<!DOCTYPE html><html lang="id">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -12,250 +11,263 @@
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
       background-color: #000;
       color: #fff;
-    }
+    }* { box-sizing: border-box; }
 
-    * { box-sizing: border-box; }
+body {
+  display: flex;
+  flex-direction: column;
+}
 
-    body {
-      display: flex;
-      flex-direction: column;
-    }
+.container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  max-width: 1200px;
+  margin: 0 auto;
+  border: 1px solid #333;
+}
 
-    .container {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      max-width: 1200px;
-      margin: 0 auto;
-      border: 1px solid #333;
-    }
+.header {
+  background-color: #111;
+  padding: 15px 20px;
+  border-bottom: 2px solid #333;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
 
-    .header {
-      background-color: #111;
-      padding: 15px 20px;
-      border-bottom: 2px solid #333;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.9rem;
+}
 
-    .user-info {
-      display: flex;
-      align-items: center;
-      gap: 15px;
-      font-size: 0.9rem;
-    }
+.online-indicator {
+  width: 8px;
+  height: 8px;
+  background-color: #007bff;
+  border-radius: 50%;
+  animation: pulse 2s infinite;
+}
 
-    .online-indicator {
-      width: 8px;
-      height: 8px;
-      background-color: #007bff;
-      border-radius: 50%;
-      animation: pulse 2s infinite;
-    }
+@keyframes pulse {
+  0% { opacity: 1; }
+  50% { opacity: 0.5; }
+  100% { opacity: 1; }
+}
 
-    @keyframes pulse {
-      0% { opacity: 1; }
-      50% { opacity: 0.5; }
-      100% { opacity: 1; }
-    }
+.clear-btn {
+  background-color: #ff4444;
+  color: white;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
 
-    .main-content {
-      flex: 1;
-      display: flex;
-      overflow: hidden;
-      min-height: 0;
-    }
+.clear-btn:hover {
+  background-color: #cc0000;
+}
 
-    .sidebar {
-      width: 250px;
-      background-color: #111;
-      border-right: 1px solid #333;
-      padding: 20px;
-      overflow-y: auto;
-    }
+.main-content {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+  min-height: 0;
+}
 
-    .chat-area {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      background-color: #000;
-      min-height: 0;
-      overflow: hidden;
-    }
+.sidebar {
+  width: 250px;
+  background-color: #111;
+  border-right: 1px solid #333;
+  padding: 20px;
+  overflow-y: auto;
+}
 
-    .messages-container {
-      flex: 1;
-      overflow-y: auto;
-      padding: 20px;
-      scroll-behavior: smooth;
-      min-height: 0;
-    }
+.chat-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background-color: #000;
+  min-height: 0;
+  overflow: hidden;
+}
 
-    .input-area {
-      padding: 20px;
-      background-color: #111;
-      border-top: 1px solid #333;
-    }
+.messages-container {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px;
+  scroll-behavior: smooth;
+  min-height: 0;
+}
 
-    .input-container {
-      display: flex;
-      gap: 10px;
-      align-items: end;
-    }
+.input-area {
+  padding: 20px;
+  background-color: #111;
+  border-top: 1px solid #333;
+}
 
-    .message-input {
-      flex: 1;
-      padding: 12px 16px;
-      border: 2px solid #333;
-      border-radius: 25px;
-      background-color: #222;
-      color: #fff;
-      font-size: 1rem;
-      resize: none;
-      min-height: 44px;
-      max-height: 120px;
-      outline: none;
-    }
+.input-container {
+  display: flex;
+  gap: 10px;
+  align-items: end;
+}
 
-    .message-input:focus {
-      border-color: #007bff;
-    }
+.message-input {
+  flex: 1;
+  padding: 12px 16px;
+  border: 2px solid #333;
+  border-radius: 25px;
+  background-color: #222;
+  color: #fff;
+  font-size: 1rem;
+  resize: none;
+  min-height: 44px;
+  max-height: 120px;
+  outline: none;
+}
 
-    .send-btn {
-      padding: 12px 20px;
-      background-color: #007bff;
-      color: #fff;
-      border: none;
-      border-radius: 25px;
-      font-weight: 600;
-      cursor: pointer;
-      min-width: 80px;
-    }
+.message-input:focus {
+  border-color: #007bff;
+}
 
-    .media-btn {
-      cursor: pointer;
-      font-size: 1.5rem;
-      color: #007bff;
-      padding: 0 5px;
-      user-select: none;
-    }
+.send-btn {
+  padding: 12px 20px;
+  background-color: #007bff;
+  color: #fff;
+  border: none;
+  border-radius: 25px;
+  font-weight: 600;
+  cursor: pointer;
+  min-width: 80px;
+}
 
-    .message {
-      margin-bottom: 15px;
-      padding: 12px 16px;
-      border-radius: 12px;
-      max-width: 80%;
-      word-wrap: break-word;
-    }
+.media-btn {
+  cursor: pointer;
+  font-size: 1.5rem;
+  color: #007bff;
+  padding: 0 5px;
+  user-select: none;
+}
 
-    .message.own {
-      background-color: #333;
-      margin-left: auto;
-      border-bottom-right-radius: 4px;
-    }
+.message {
+  margin-bottom: 15px;
+  padding: 12px 16px;
+  border-radius: 12px;
+  max-width: 80%;
+  word-wrap: break-word;
+}
 
-    .message.other {
-      background-color: #222;
-      margin-right: auto;
-      border-bottom-left-radius: 4px;
-      border-left: 3px solid #007bff;
-    }
+.message.own {
+  background-color: #333;
+  margin-left: auto;
+  border-bottom-right-radius: 4px;
+}
 
-    .message-header {
-      display: flex;
-      justify-content: space-between;
-      margin-bottom: 5px;
-    }
+.message.other {
+  background-color: #222;
+  margin-right: auto;
+  border-bottom-left-radius: 4px;
+  border-left: 3px solid #007bff;
+}
 
-    .username {
-      font-weight: 600;
-      color: #007bff;
-      font-size: 0.9rem;
-    }
+.message-header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 5px;
+}
 
-    .timestamp {
-      font-size: 0.75rem;
-      color: #888;
-    }
+.username {
+  font-weight: 600;
+  color: #007bff;
+  font-size: 0.9rem;
+}
 
-    .message-content {
-      line-height: 1.4;
-    }
+.timestamp {
+  font-size: 0.75rem;
+  color: #888;
+}
 
-    .typing-indicator {
-      padding: 10px 20px;
-      font-style: italic;
-      color: #888;
-      font-size: 0.9rem;
-    }
+.message-content {
+  line-height: 1.4;
+}
 
-    .login-modal {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background-color: rgba(0, 0, 0, 0.9);
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      z-index: 1000;
-    }
+.typing-indicator {
+  padding: 10px 20px;
+  font-style: italic;
+  color: #888;
+  font-size: 0.9rem;
+}
 
-    .login-form {
-      background-color: #111;
-      padding: 40px;
-      border-radius: 12px;
-      border: 2px solid #333;
-      text-align: center;
-      min-width: 300px;
-    }
+.login-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.9);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
 
-    .login-form input {
-      width: 100%;
-      padding: 12px;
-      margin: 10px 0;
-      border: 2px solid #333;
-      border-radius: 8px;
-      background-color: #222;
-      color: #fff;
-      font-size: 1rem;
-      outline: none;
-    }
+.login-form {
+  background-color: #111;
+  padding: 40px;
+  border-radius: 12px;
+  border: 2px solid #333;
+  text-align: center;
+  min-width: 300px;
+}
 
-    .login-form button {
-      width: 100%;
-      padding: 12px;
-      background-color: #007bff;
-      color: #fff;
-      border: none;
-      border-radius: 8px;
-      font-size: 1rem;
-      font-weight: 600;
-      cursor: pointer;
-    }
+.login-form input {
+  width: 100%;
+  padding: 12px;
+  margin: 10px 0;
+  border: 2px solid #333;
+  border-radius: 8px;
+  background-color: #222;
+  color: #fff;
+  font-size: 1rem;
+  outline: none;
+}
 
-    .error-message {
-      color: #ff4444;
-      margin: 10px 0;
-      font-size: 0.9rem;
-    }
+.login-form button {
+  width: 100%;
+  padding: 12px;
+  background-color: #007bff;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+}
 
-    @media (max-width: 768px) {
-      .main-content {
-        flex-direction: column;
-      }
+.error-message {
+  color: #ff4444;
+  margin: 10px 0;
+  font-size: 0.9rem;
+}
 
-      .sidebar {
-        width: 100%;
-        border-bottom: 1px solid #333;
-      }
+@media (max-width: 768px) {
+  .main-content {
+    flex-direction: column;
+  }
 
-      .message {
-        max-width: 95%;
-      }
-    }
+  .sidebar {
+    width: 100%;
+    border-bottom: 1px solid #333;
+  }
+
+  .message {
+    max-width: 95%;
+  }
+}
+
   </style>
 </head>
 <body>
@@ -266,11 +278,12 @@
         <div class="online-indicator"></div>
         <span id="current-user">Guest</span>
         <span id="user-count">0/2 users</span>
+        <button id="clear-btn" class="clear-btn">🗑️ Hapus</button>
       </div>
     </div>
     <div class="main-content">
       <div class="sidebar">
-        <h3>👥</h3>
+        <h3>👥 Online Users</h3>
         <ul id="user-list"></ul>
       </div>
       <div class="chat-area">
@@ -286,19 +299,14 @@
         </div>
       </div>
     </div>
-  </div>
-
-  <!-- Modal Login -->
-  <div id="login-modal" class="login-modal">
+  </div>  <div id="login-modal" class="login-modal">
     <div class="login-form">
       <h2>💌</h2>
       <input type="text" id="username-input" placeholder="Nama kamu" maxlength="20" />
       <div id="error-message" class="error-message" style="display: none;"></div>
       <button id="join-btn">ᯓ➤</button>
     </div>
-  </div>
-
-  <script>
+  </div>  <script>
     const socket = io();
     let currentUsername = '';
     let isTyping = false;
@@ -316,6 +324,7 @@
     const userCountSpan = document.getElementById('user-count');
     const typingIndicator = document.getElementById('typing-indicator');
     const mediaInput = document.getElementById('media-input');
+    const clearBtn = document.getElementById('clear-btn');
 
     joinBtn.addEventListener('click', () => {
       const username = usernameInput.value.trim();
@@ -350,9 +359,19 @@
       scrollToBottom();
     });
 
+    socket.on('messages_cleared', () => {
+      messagesContainer.innerHTML = '';
+    });
+
     socket.on('user_typing', (data) => {
       typingIndicator.textContent = `${data.username} sedang mengetik...`;
       typingIndicator.style.display = data.isTyping ? 'block' : 'none';
+    });
+
+    clearBtn.addEventListener('click', () => {
+      if (confirm('Yakin ingin menghapus semua pesan?')) {
+        socket.emit('clear_messages');
+      }
     });
 
     sendBtn.addEventListener('click', sendMessage);
@@ -449,6 +468,5 @@
     }
 
     usernameInput.focus();
-  </script>
-</body>
+  </script></body>
 </html>
