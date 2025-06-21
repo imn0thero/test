@@ -101,6 +101,9 @@ body {
 }
 
 .messages-container {
+  flex: 1;
+  padding: 20px;
+  overflow-y: auto;
   background-image: url('/images/d.png');
   background-size: cover;
   background-position: center;
@@ -110,6 +113,9 @@ body {
 
 @media (max-width: 768px) {
   .messages-container {
+    flex: 1;
+    padding: 20px;
+    overflow-y: auto;
     background-image: url('/images/m.png');
     background-size: cover;
     background-position: center;
