@@ -282,6 +282,21 @@ body {
   background: #e53935;
 }
 
+#uploadProgress {
+  margin-top: 5px;
+  height: 8px;
+  background: #333;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+#uploadBar {
+  height: 100%;
+  background: #64b5f6;
+  width: 0%;
+  transition: width 0.2s ease-in-out;
+}
+
 @keyframes slideIn {
   from { transform: translateX(100%); opacity: 0; }
   to { transform: translateX(0); opacity: 1; }
@@ -331,6 +346,9 @@ body {
                 <button class="media-btn" id="mediaBtn" disabled>⎙</button>
                 <button class="send-btn" id="sendBtn" disabled>ᯓ➤</button>
             </div>
+            <div id="uploadProgress">
+               <div id="uploadBar"></div>
+            </div>
         </div>
     </div>
 
@@ -362,6 +380,8 @@ body {
         const messagesContainer = document.getElementById('messagesContainer');
         const userList = document.getElementById('userList');
         const typingIndicator = document.getElementById('typingIndicator');
+        const uploadProgress = document.getElementById('uploadProgress');
+        const uploadBar = document.getElementById('uploadBar');
 
         // Join chat
         joinBtn.addEventListener('click', () => {
@@ -411,18 +431,39 @@ body {
             fileInput.click();
         });
 
-        fileInput.addEventListener('change', (e) => {
-            const file = e.target.files[0];
-            if (file) {
-                const formData = new FormData();
-                formData.append('media', file);
+        // Elemen progress bar
+fileInput.addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (file) {
+        const formData = new FormData();
+        formData.append('media', file);
 
-                fetch('/upload', {
-                    method: 'POST',
-                    body: formData
-                })
-                .then(response => response.json())
-                .then(data => {
+        const xhr = new XMLHttpRequest();
+
+        xhr.upload.onprogress = (event) => {
+            if (event.lengthComputable) {
+                const percent = (event.loaded / event.total) * 100;
+                uploadBar.style.width = percent + '%';
+            }
+        };
+
+        xhr.onloadstart = () => {
+            uploadProgress.style.display = 'block';
+            uploadBar.style.width = '0%';
+        };
+
+        xhr.onloadend = () => {
+            setTimeout(() => {
+                uploadProgress.style.display = 'none';
+                uploadBar.style.width = '0%';
+            }, 800);
+            fileInput.value = '';
+        };
+
+        xhr.onreadystatechange = () => {
+            if (xhr.readyState === 4 && xhr.status === 200) {
+                try {
+                    const data = JSON.parse(xhr.responseText);
                     if (data.error) {
                         showNotification(data.error, 'error');
                     } else {
@@ -437,13 +478,16 @@ body {
                             type: 'media'
                         });
                     }
-                })
-                .catch(error => {
-                    showNotification('Error uploading file', 'error');
-                });
+                } catch (e) {
+                    showNotification('Upload gagal (respon tidak valid)', 'error');
+                }
             }
-        });
+        };
 
+        xhr.open('POST', '/upload');
+        xhr.send(formData);
+    }
+});
         // Clear messages
         clearBtn.addEventListener('click', () => {
             if (confirm('Apakah Kamu Yakin Hapus Semua Kenangan Ini?')) {
