@@ -101,10 +101,17 @@ body {
 }
 
 .messages-container {
-  flex: 1;
-  padding: 20px;
-  overflow-y: auto;
-  background-color: #0d0d0d;
+  background-image: url('/images/d.png');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+}
+
+@media (max-width: 768px) {
+  .messages-container {
+    background-image: url('/images/m.png');
+  }
 }
 
 .message {
