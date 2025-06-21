@@ -100,29 +100,29 @@ body {
   background: #c0392b;
 }
 
-.messages-container {
-  flex: 1;
-  padding: 20px;
-  overflow-y: auto;
-  background-image: url('/images/d.png');
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
-  background-attachment: fixed;
-}
-
-@media (max-width: 768px) {
   .messages-container {
-    flex: 1;
-    padding: 20px;
+    position: relative;
     overflow-y: auto;
-    background-image: url('/images/m.png');
-    background-size: cover;
-    background-position: center;
-    background-repeat: no-repeat;
-    background-attachment: fixed;
+    padding: 20px;
+    flex: 1;
+    min-height: 100px;
   }
-}
+
+  .bg-img {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover; /* agar proporsional */
+    z-index: 0;
+    opacity: 0.3; /* biar chat di atas tetap terbaca */
+  }
+
+  .messages-container > *:not(.bg-img) {
+    position: relative;
+    z-index: 1;
+  }
 
 .message {
   margin-bottom: 15px;
