@@ -100,29 +100,12 @@ body {
   background: #c0392b;
 }
 
-  .messages-container {
-    position: relative;
-    overflow-y: auto;
-    padding: 20px;
-    flex: 1;
-    min-height: 100px;
-  }
-
-  .bg-img {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    object-fit: cover; /* agar proporsional */
-    z-index: 0;
-    opacity: 0.3; /* biar chat di atas tetap terbaca */
-  }
-
-  .messages-container > *:not(.bg-img) {
-    position: relative;
-    z-index: 1;
-  }
+.messages-container {
+flex: 1;
+padding: 20px;
+overflow-y: auto;
+background-color: #0d0d0d;
+}
 
 .message {
   margin-bottom: 15px;
