@@ -465,7 +465,7 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>🔒 Private Chat Room</h1>
+            <h1>ε(´｡•᎑•`)っ 💕</h1>
             <div class="user-info">
                 <div class="online-indicator"></div>
                 <span id="current-user">Guest</span>
@@ -475,7 +475,7 @@
 
         <div class="main-content">
             <div class="sidebar">
-                <h3>👥 Online Users</h3>
+                <h3>👥</h3>
                 <ul id="user-list" class="user-list"></ul>
                 <button id="clear-messages" class="clear-btn" title="Clear all messages">🗑️</button>
             </div>
@@ -489,15 +489,15 @@
                 <div class="input-area">
                     <div class="input-container">
                         <label for="file-input" class="file-input-label">
-                            📎
+                            ⎙
                         </label>
                         <input type="file" id="file-input" class="file-input" accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.txt">
                         
                         <textarea id="message-input" class="message-input" 
-                                  placeholder="Type your message..." 
+                                  placeholder="Tulis Isi Hatimu Disini..." 
                                   rows="1"></textarea>
                         
-                        <button id="send-btn" class="send-btn">Send</button>
+                        <button id="send-btn" class="send-btn">ᯓ➤</button>
                     </div>
                     <div id="upload-progress" class="upload-progress" style="display: none;"></div>
                 </div>
@@ -508,10 +508,10 @@
     <!-- Login Modal -->
     <div id="login-modal" class="login-modal">
         <div class="login-form">
-            <h2>Enter Chat Room</h2>
-            <input type="text" id="username-input" placeholder="Enter your username" maxlength="20">
+            <h2>💌</h2>
+            <input type="text" id="username-input" placeholder="Masukkan Namamu Dihatiku" maxlength="20">
             <div id="error-message" class="error-message" style="display: none;"></div>
-            <button id="join-btn">Join Chat</button>
+            <button id="join-btn">ᯓ➤</button>
         </div>
     </div>
 
@@ -565,11 +565,11 @@
         });
 
         socket.on('room_full', () => {
-            showError('Room is full (maximum 2 users)');
+            showError('Chat Penuh Hanya Untuk 2 Orang');
         });
 
         socket.on('username_taken', () => {
-            showError('Username is already taken');
+            showError('Username Sudah Ada');
         });
 
         socket.on('user_list_update', (users) => {
@@ -584,7 +584,7 @@
 
         socket.on('user_typing', (data) => {
             if (data.isTyping) {
-                typingIndicator.textContent = `${data.username} is typing...`;
+                typingIndicator.textContent = `${data.username} sedang mengetik...`;
                 typingIndicator.style.display = 'block';
             } else {
                 typingIndicator.style.display = 'none';
@@ -596,11 +596,11 @@
         });
 
         socket.on('user_joined', (username) => {
-            showSystemMessage(`${username} joined the chat`);
+            showSystemMessage(`${username} Ciee Baru Gabung`);
         });
 
         socket.on('user_left', (username) => {
-            showSystemMessage(`${username} left the chat`);
+            showSystemMessage(`${username} Bye bye, Jangan Lupa Balik Lagi`);
         });
 
         // Send message
@@ -631,7 +631,7 @@
 
         // Clear messages
         clearBtn.addEventListener('click', () => {
-            if (confirm('Are you sure you want to clear all messages?')) {
+            if (confirm('Yakin Hapus Semua?')) {
                 socket.emit('clear_messages');
             }
         });
@@ -662,7 +662,7 @@
             formData.append('media', file);
 
             uploadProgress.style.display = 'block';
-            uploadProgress.textContent = 'Uploading...';
+            uploadProgress.textContent = 'Sabar Lagi Upload...';
 
             fetch('/upload', {
                 method: 'POST',
