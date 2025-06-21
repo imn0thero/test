@@ -6,24 +6,25 @@
   <title>Private Chat Room</title>
   <script src="/socket.io/socket.io.js"></script>
   <style>
-    * {
+    html, body {
+      height: 100%;
       margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-
-    body {
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
       background-color: #000;
       color: #fff;
-      height: 100vh;
-      overflow: hidden;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      display: flex;
+      flex-direction: column;
     }
 
     .container {
+      flex: 1;
       display: flex;
       flex-direction: column;
-      height: 100vh;
       max-width: 1200px;
       margin: 0 auto;
       border: 1px solid #333;
@@ -36,11 +37,6 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-    }
-
-    .header h1 {
-      font-size: 1.5rem;
-      font-weight: 600;
     }
 
     .user-info {
@@ -65,9 +61,10 @@
     }
 
     .main-content {
-      display: flex;
       flex: 1;
+      display: flex;
       overflow: hidden;
+      min-height: 0;
     }
 
     .sidebar {
@@ -76,42 +73,6 @@
       border-right: 1px solid #333;
       padding: 20px;
       overflow-y: auto;
-      position: relative;
-    }
-
-    .sidebar h3 {
-      margin-bottom: 15px;
-      font-size: 1.1rem;
-    }
-
-    .user-list {
-      list-style: none;
-    }
-
-    .user-list li {
-      padding: 8px 12px;
-      margin: 5px 0;
-      background-color: #222;
-      border-radius: 8px;
-      border-left: 3px solid #007bff;
-      font-size: 0.9rem;
-    }
-
-    .clear-btn {
-      width: 40px;
-      height: 40px;
-      position: absolute;
-      top: 15px;
-      right: 15px;
-      background-color: #ff4444;
-      color: white;
-      border: none;
-      border-radius: 50%;
-      cursor: pointer;
-      font-size: 16px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
     }
 
     .chat-area {
@@ -119,6 +80,8 @@
       display: flex;
       flex-direction: column;
       background-color: #000;
+      min-height: 0;
+      overflow: hidden;
     }
 
     .messages-container {
@@ -126,77 +89,7 @@
       overflow-y: auto;
       padding: 20px;
       scroll-behavior: smooth;
-    }
-
-    .message {
-      margin-bottom: 15px;
-      padding: 12px 16px;
-      border-radius: 12px;
-      max-width: 80%;
-      word-wrap: break-word;
-    }
-
-    .message.own {
-      background-color: #333;
-      margin-left: auto;
-      border-bottom-right-radius: 4px;
-    }
-
-    .message.other {
-      background-color: #222;
-      margin-right: auto;
-      border-bottom-left-radius: 4px;
-      border-left: 3px solid #007bff;
-    }
-
-    .message-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 5px;
-    }
-
-    .username {
-      font-weight: 600;
-      color: #007bff;
-      font-size: 0.9rem;
-    }
-
-    .timestamp {
-      font-size: 0.75rem;
-      color: #888;
-    }
-
-    .message-content {
-      line-height: 1.4;
-    }
-
-    .media-content img,
-    .media-content video {
-      max-width: 300px;
-      border-radius: 8px;
-    }
-
-    .media-content audio {
-      width: 100%;
-      max-width: 300px;
-    }
-
-    .file-link {
-      display: inline-block;
-      padding: 8px 12px;
-      background-color: #444;
-      color: #fff;
-      text-decoration: none;
-      border-radius: 6px;
-      font-size: 0.9rem;
-    }
-
-    .typing-indicator {
-      padding: 10px 20px;
-      font-style: italic;
-      color: #888;
-      font-size: 0.9rem;
+      min-height: 0;
     }
 
     .input-area {
@@ -229,22 +122,6 @@
       border-color: #007bff;
     }
 
-    .file-input-label {
-      padding: 12px;
-      background-color: #333;
-      border-radius: 50%;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      width: 44px;
-      height: 44px;
-    }
-
-    .file-input {
-      display: none;
-    }
-
     .send-btn {
       padding: 12px 20px;
       background-color: #007bff;
@@ -254,6 +131,63 @@
       font-weight: 600;
       cursor: pointer;
       min-width: 80px;
+    }
+
+    .media-btn {
+      cursor: pointer;
+      font-size: 1.5rem;
+      color: #007bff;
+      padding: 0 5px;
+      user-select: none;
+    }
+
+    .message {
+      margin-bottom: 15px;
+      padding: 12px 16px;
+      border-radius: 12px;
+      max-width: 80%;
+      word-wrap: break-word;
+    }
+
+    .message.own {
+      background-color: #333;
+      margin-left: auto;
+      border-bottom-right-radius: 4px;
+    }
+
+    .message.other {
+      background-color: #222;
+      margin-right: auto;
+      border-bottom-left-radius: 4px;
+      border-left: 3px solid #007bff;
+    }
+
+    .message-header {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 5px;
+    }
+
+    .username {
+      font-weight: 600;
+      color: #007bff;
+      font-size: 0.9rem;
+    }
+
+    .timestamp {
+      font-size: 0.75rem;
+      color: #888;
+    }
+
+    .message-content {
+      line-height: 1.4;
+    }
+
+    .typing-indicator {
+      padding: 10px 20px;
+      font-style: italic;
+      color: #888;
+      font-size: 0.9rem;
     }
 
     .login-modal {
@@ -278,11 +212,6 @@
       min-width: 300px;
     }
 
-    .login-form h2 {
-      margin-bottom: 20px;
-      color: #fff;
-    }
-
     .login-form input {
       width: 100%;
       padding: 12px;
@@ -293,10 +222,6 @@
       color: #fff;
       font-size: 1rem;
       outline: none;
-    }
-
-    .login-form input:focus {
-      border-color: #007bff;
     }
 
     .login-form button {
@@ -315,24 +240,6 @@
       color: #ff4444;
       margin: 10px 0;
       font-size: 0.9rem;
-    }
-
-    .upload-progress {
-      margin-top: 10px;
-      padding: 8px;
-      background-color: #333;
-      border-radius: 6px;
-      color: #007bff;
-      font-size: 0.9rem;
-    }
-
-    ::-webkit-scrollbar {
-      width: 8px;
-    }
-
-    ::-webkit-scrollbar-thumb {
-      background: #333;
-      border-radius: 4px;
     }
 
     @media (max-width: 768px) {
@@ -363,30 +270,29 @@
     </div>
     <div class="main-content">
       <div class="sidebar">
-        <h3>👥 Online Users</h3>
-        <ul id="user-list" class="user-list"></ul>
-        <button id="clear-messages" class="clear-btn" title="Clear all messages">🗑️</button>
+        <h3>👥</h3>
+        <ul id="user-list"></ul>
       </div>
       <div class="chat-area">
         <div id="messages" class="messages-container"></div>
         <div id="typing-indicator" class="typing-indicator" style="display: none;"></div>
         <div class="input-area">
           <div class="input-container">
-            <label for="file-input" class="file-input-label">⎙</label>
-            <input type="file" id="file-input" class="file-input" />
-            <textarea id="message-input" class="message-input" placeholder="Type your message..." rows="1"></textarea>
+            <label for="media-input" class="media-btn">⎙</label>
+            <input type="file" id="media-input" style="display: none;" />
+            <textarea id="message-input" class="message-input" placeholder="Ketik pesan..." rows="1"></textarea>
             <button id="send-btn" class="send-btn">ᯓ➤</button>
           </div>
-          <div id="upload-progress" class="upload-progress" style="display: none;"></div>
         </div>
       </div>
     </div>
   </div>
 
+  <!-- Modal Login -->
   <div id="login-modal" class="login-modal">
     <div class="login-form">
       <h2>💌</h2>
-      <input type="text" id="username-input" placeholder="Enter your username" maxlength="20">
+      <input type="text" id="username-input" placeholder="Nama kamu" maxlength="20" />
       <div id="error-message" class="error-message" style="display: none;"></div>
       <button id="join-btn">ᯓ➤</button>
     </div>
@@ -405,22 +311,18 @@
     const messagesContainer = document.getElementById('messages');
     const messageInput = document.getElementById('message-input');
     const sendBtn = document.getElementById('send-btn');
-    const fileInput = document.getElementById('file-input');
     const userList = document.getElementById('user-list');
     const currentUserSpan = document.getElementById('current-user');
     const userCountSpan = document.getElementById('user-count');
     const typingIndicator = document.getElementById('typing-indicator');
-    const clearBtn = document.getElementById('clear-messages');
-    const uploadProgress = document.getElementById('upload-progress');
+    const mediaInput = document.getElementById('media-input');
 
     joinBtn.addEventListener('click', () => {
       const username = usernameInput.value.trim();
-      if (username) {
-        socket.emit('join', username);
-      }
+      if (username) socket.emit('join', username);
     });
 
-    usernameInput.addEventListener('keypress', (e) => {
+    usernameInput.addEventListener('keypress', e => {
       if (e.key === 'Enter') joinBtn.click();
     });
 
@@ -433,8 +335,6 @@
       scrollToBottom();
     });
 
-    socket.on('room_full', () => showError('Room is full (maximum 2 users)'));
-    socket.on('username_taken', () => showError('Username is already taken'));
     socket.on('user_list_update', (users) => {
       userList.innerHTML = '';
       users.forEach(user => {
@@ -451,23 +351,12 @@
     });
 
     socket.on('user_typing', (data) => {
-      typingIndicator.textContent = `${data.username} is typing...`;
+      typingIndicator.textContent = `${data.username} sedang mengetik...`;
       typingIndicator.style.display = data.isTyping ? 'block' : 'none';
     });
 
-    socket.on('messages_cleared', () => messagesContainer.innerHTML = '');
-
-    function sendMessage() {
-      const text = messageInput.value.trim();
-      if (text) {
-        socket.emit('new_message', { text, type: 'text' });
-        messageInput.value = '';
-        messageInput.style.height = 'auto';
-      }
-    }
-
     sendBtn.addEventListener('click', sendMessage);
-    messageInput.addEventListener('keypress', (e) => {
+    messageInput.addEventListener('keypress', e => {
       if (e.key === 'Enter' && !e.shiftKey) {
         e.preventDefault();
         sendMessage();
@@ -484,32 +373,79 @@
         isTyping = false;
         socket.emit('typing', false);
       }, 1000);
+
       messageInput.style.height = 'auto';
       messageInput.style.height = Math.min(messageInput.scrollHeight, 120) + 'px';
     });
 
-    function scrollToBottom() {
-      messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    mediaInput.addEventListener('change', async () => {
+      const file = mediaInput.files[0];
+      if (!file) return;
+
+      const formData = new FormData();
+      formData.append('media', file);
+
+      try {
+        const res = await fetch('/upload', {
+          method: 'POST',
+          body: formData
+        });
+
+        const data = await res.json();
+        if (data.path) {
+          socket.emit('new_message', {
+            type: 'media',
+            media: data,
+            text: ''
+          });
+        }
+      } catch (err) {
+        console.error('Upload gagal:', err);
+      }
+
+      mediaInput.value = '';
+    });
+
+    function sendMessage() {
+      const text = messageInput.value.trim();
+      if (text) {
+        socket.emit('new_message', { text, type: 'text' });
+        messageInput.value = '';
+        messageInput.style.height = 'auto';
+      }
     }
 
     function displayMessage(message) {
       const div = document.createElement('div');
       div.className = `message ${message.username === currentUsername ? 'own' : 'other'}`;
       const timestamp = new Date(message.timestamp).toLocaleTimeString();
+
+      let content = message.text || '';
+      if (message.media && message.media.path) {
+        const ext = message.media.path.split('.').pop().toLowerCase();
+        if (['jpg', 'jpeg', 'png', 'gif'].includes(ext)) {
+          content += `<br><img src="${message.media.path}" style="max-width:100%; border-radius:8px;" />`;
+        } else if (['mp3', 'wav', 'ogg', 'm4a'].includes(ext)) {
+          content += `<br><audio controls src="${message.media.path}" style="width:100%; margin-top:5px;"></audio>`;
+        } else if (['mp4', 'mov', 'avi'].includes(ext)) {
+          content += `<br><video controls src="${message.media.path}" style="max-width:100%; margin-top:5px;"></video>`;
+        } else {
+          content += `<br><a href="${message.media.path}" download>📎 Unduh File</a>`;
+        }
+      }
+
       div.innerHTML = `
         <div class="message-header">
           <span class="username">${message.username}</span>
           <span class="timestamp">${timestamp}</span>
         </div>
-        <div class="message-content">${message.text}</div>
+        <div class="message-content">${content}</div>
       `;
       messagesContainer.appendChild(div);
     }
 
-    function showError(msg) {
-      errorMessage.textContent = msg;
-      errorMessage.style.display = 'block';
-      setTimeout(() => errorMessage.style.display = 'none', 3000);
+    function scrollToBottom() {
+      messagesContainer.scrollTop = messagesContainer.scrollHeight;
     }
 
     usernameInput.focus();
