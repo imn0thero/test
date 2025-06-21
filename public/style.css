@@ -111,6 +111,10 @@ body {
 @media (max-width: 768px) {
   .messages-container {
     background-image: url('/images/m.png');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
   }
 }
 
