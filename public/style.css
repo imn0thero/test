@@ -103,11 +103,7 @@ body {
   flex: 1;
   padding: 20px;
   overflow-y: auto;
-  background-image: url('images/d.png');
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
-  background-attachment: fixed;
+  background-color: #1a1a2e;
   position: relative;
 }
 
@@ -322,17 +318,16 @@ body {
   }
 }
 
-/* Alternative: If you want to use your own image instead of the SVG */
-/*
-.messages-container {
-  flex: 1;
-  padding: 20px;
-  overflow-y: auto;
-  background-image: url('path/to/your/image.jpg');
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
-  background-attachment: fixed;
-  position: relative;
-}
+/* Pilihan warna background solid lainnya:
+
+1. Dark Blue: #1a1a2e (saat ini)
+2. Dark Purple: #2d1b69  
+3. Dark Green: #0f3460
+4. Dark Red: #16213e
+5. Dark Gray: #2c2c2c
+6. Black: #000000
+7. Dark Brown: #3c2415
+8. Navy: #001122
+
+Tinggal ganti #1a1a2e dengan warna pilihan Anda
 */
