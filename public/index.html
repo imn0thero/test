@@ -163,6 +163,147 @@ body {
   margin-top: 8px;
 }
 
+/* Voice Note Styles */
+.voice-note {
+  display: flex;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 8px 12px;
+  margin-top: 8px;
+  max-width: 280px;
+}
+
+.voice-play-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: none;
+  background: #64b5f6;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  margin-right: 10px;
+  font-size: 12px;
+}
+
+.voice-play-btn:hover {
+  background: #42a5f5;
+}
+
+.voice-play-btn.playing {
+  background: #e53935;
+}
+
+.voice-waveform {
+  flex: 1;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 8px;
+}
+
+.voice-duration {
+  font-size: 12px;
+  opacity: 0.8;
+  min-width: 35px;
+  text-align: right;
+}
+
+.waveform-bar {
+  width: 2px;
+  background: #64b5f6;
+  margin: 0 1px;
+  border-radius: 1px;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 1; }
+}
+
+/* Voice Recording UI */
+.voice-recording-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.8);
+  display: none;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.voice-recording-container {
+  background: #1e1e1e;
+  border-radius: 20px;
+  padding: 30px;
+  text-align: center;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  min-width: 300px;
+}
+
+.recording-indicator {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: #e53935;
+  margin: 0 auto 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  color: white;
+  animation: recordingPulse 1s ease-in-out infinite;
+}
+
+@keyframes recordingPulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+}
+
+.recording-time {
+  font-size: 24px;
+  font-weight: bold;
+  margin-bottom: 20px;
+  color: #e53935;
+}
+
+.recording-controls {
+  display: flex;
+  gap: 15px;
+  justify-content: center;
+}
+
+.recording-btn {
+  padding: 12px 20px;
+  border: none;
+  border-radius: 25px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: bold;
+}
+
+.cancel-btn {
+  background: #616161;
+  color: white;
+}
+
+.stop-send-btn {
+  background: #4caf50;
+  color: white;
+}
+
+.recording-btn:hover {
+  opacity: 0.8;
+}
+
 .input-area {
   padding: 20px;
   background-color: #1e1e1e;
@@ -190,7 +331,8 @@ body {
 }
 
 .send-btn,
-.media-btn {
+.media-btn,
+.voice-btn {
   padding: 12px 20px;
   border: none;
   border-radius: 25px;
@@ -206,6 +348,15 @@ body {
 .media-btn {
   background-color: #616161;
   color: white;
+}
+
+.voice-btn {
+  background-color: #4caf50;
+  color: white;
+}
+
+.voice-btn:hover {
+  background-color: #43a047;
 }
 
 .typing-indicator {
@@ -320,6 +471,10 @@ body {
   .message-bubble {
     max-width: 85%;
   }
+  .voice-recording-container {
+    margin: 20px;
+    min-width: auto;
+  }
 }
     </style>
 </head>
@@ -348,10 +503,24 @@ body {
                 <input type="text" id="messageInput" class="message-input" placeholder="Sampaikan Perasaanmu..." disabled>
                 <input type="file" id="fileInput" class="file-input" accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.txt">
                 <button class="media-btn" id="mediaBtn" disabled>⎙</button>
+                <button class="voice-btn" id="voiceBtn" disabled>🎤</button>
                 <button class="send-btn" id="sendBtn" disabled>ᯓ➤</button>
             </div>
             <div id="uploadProgress">
                <div id="uploadBar"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Voice Recording Modal -->
+    <div class="voice-recording-modal" id="voiceRecordingModal">
+        <div class="voice-recording-container">
+            <div class="recording-indicator">🎤</div>
+            <div class="recording-time" id="recordingTime">00:00</div>
+            <p style="margin-bottom: 20px; color: #aaa;">Sedang merekam pesan suara...</p>
+            <div class="recording-controls">
+                <button class="recording-btn cancel-btn" id="cancelRecordingBtn">Batal</button>
+                <button class="recording-btn stop-send-btn" id="stopSendBtn">Kirim</button>
             </div>
         </div>
     </div>
@@ -371,6 +540,13 @@ body {
         let currentUser = null;
         let typingTimer = null;
 
+        // Voice recording variables
+        let mediaRecorder = null;
+        let audioChunks = [];
+        let recordingTimer = null;
+        let recordingStartTime = null;
+        let isRecording = false;
+
         // DOM elements
         const loginModal = document.getElementById('loginModal');
         const usernameInput = document.getElementById('usernameInput');
@@ -379,6 +555,7 @@ body {
         const messageInput = document.getElementById('messageInput');
         const sendBtn = document.getElementById('sendBtn');
         const mediaBtn = document.getElementById('mediaBtn');
+        const voiceBtn = document.getElementById('voiceBtn');
         const fileInput = document.getElementById('fileInput');
         const clearBtn = document.getElementById('clearBtn');
         const messagesContainer = document.getElementById('messagesContainer');
@@ -386,6 +563,12 @@ body {
         const typingIndicator = document.getElementById('typingIndicator');
         const uploadProgress = document.getElementById('uploadProgress');
         const uploadBar = document.getElementById('uploadBar');
+
+        // Voice recording modal elements
+        const voiceRecordingModal = document.getElementById('voiceRecordingModal');
+        const recordingTime = document.getElementById('recordingTime');
+        const cancelRecordingBtn = document.getElementById('cancelRecordingBtn');
+        const stopSendBtn = document.getElementById('stopSendBtn');
 
         // Join chat
         joinBtn.addEventListener('click', () => {
@@ -435,63 +618,213 @@ body {
             fileInput.click();
         });
 
-        // Elemen progress bar
-fileInput.addEventListener('change', (e) => {
-    const file = e.target.files[0];
-    if (file) {
-        const formData = new FormData();
-        formData.append('media', file);
+        // Voice recording functions
+        async function startVoiceRecording() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                mediaRecorder = new MediaRecorder(stream);
+                audioChunks = [];
+                
+                mediaRecorder.ondataavailable = (event) => {
+                    audioChunks.push(event.data);
+                };
 
-        const xhr = new XMLHttpRequest();
+                mediaRecorder.onstop = () => {
+                    const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+                    sendVoiceNote(audioBlob);
+                    
+                    // Stop all tracks to turn off microphone
+                    stream.getTracks().forEach(track => track.stop());
+                };
 
-        xhr.upload.onprogress = (event) => {
-            if (event.lengthComputable) {
-                const percent = (event.loaded / event.total) * 100;
-                uploadBar.style.width = percent + '%';
+                mediaRecorder.start();
+                isRecording = true;
+                recordingStartTime = Date.now();
+                
+                // Show recording modal
+                voiceRecordingModal.style.display = 'flex';
+                
+                // Start timer
+                recordingTimer = setInterval(updateRecordingTime, 100);
+                
+            } catch (error) {
+                console.error('Error accessing microphone:', error);
+                showNotification('Tidak dapat mengakses mikrofon', 'error');
             }
-        };
+        }
 
-        xhr.onloadstart = () => {
-            uploadProgress.style.display = 'block';
-            uploadBar.style.width = '0%';
-        };
+        function stopVoiceRecording() {
+            if (mediaRecorder && isRecording) {
+                mediaRecorder.stop();
+                isRecording = false;
+                clearInterval(recordingTimer);
+                voiceRecordingModal.style.display = 'none';
+            }
+        }
 
-        xhr.onloadend = () => {
-            setTimeout(() => {
-                uploadProgress.style.display = 'none';
-                uploadBar.style.width = '0%';
-            }, 800);
-            fileInput.value = '';
-        };
+        function cancelVoiceRecording() {
+            if (mediaRecorder && isRecording) {
+                mediaRecorder.stream.getTracks().forEach(track => track.stop());
+                isRecording = false;
+                clearInterval(recordingTimer);
+                voiceRecordingModal.style.display = 'none';
+                showNotification('Perekaman dibatalkan');
+            }
+        }
 
-        xhr.onreadystatechange = () => {
-            if (xhr.readyState === 4 && xhr.status === 200) {
-                try {
-                    const data = JSON.parse(xhr.responseText);
-                    if (data.error) {
-                        showNotification(data.error, 'error');
-                    } else {
-                        socket.emit('new_message', {
-                            text: `Mengirim file: ${data.originalName}`,
-                            media: {
-                                filename: data.filename,
-                                originalName: data.originalName,
-                                path: data.path,
-                                size: data.size
-                            },
-                            type: 'media'
-                        });
-                    }
-                } catch (e) {
-                    showNotification('Upload gagal (respon tidak valid)', 'error');
+        function updateRecordingTime() {
+            if (recordingStartTime) {
+                const elapsed = Date.now() - recordingStartTime;
+                const seconds = Math.floor(elapsed / 1000);
+                const minutes = Math.floor(seconds / 60);
+                const remainingSeconds = seconds % 60;
+                
+                recordingTime.textContent = 
+                    `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
+            }
+        }
+
+        function sendVoiceNote(audioBlob) {
+            const formData = new FormData();
+            const fileName = `voice_${Date.now()}.wav`;
+            formData.append('media', audioBlob, fileName);
+
+            const xhr = new XMLHttpRequest();
+
+            xhr.upload.onprogress = (event) => {
+                if (event.lengthComputable) {
+                    const percent = (event.loaded / event.total) * 100;
+                    uploadBar.style.width = percent + '%';
                 }
-            }
-        };
+            };
 
-        xhr.open('POST', '/upload');
-        xhr.send(formData);
-    }
-});
+            xhr.onloadstart = () => {
+                uploadProgress.style.display = 'block';
+                uploadBar.style.width = '0%';
+            };
+
+            xhr.onloadend = () => {
+                setTimeout(() => {
+                    uploadProgress.style.display = 'none';
+                    uploadBar.style.width = '0%';
+                }, 800);
+            };
+
+            xhr.onreadystatechange = () => {
+                if (xhr.readyState === 4 && xhr.status === 200) {
+                    try {
+                        const data = JSON.parse(xhr.responseText);
+                        if (data.error) {
+                            showNotification(data.error, 'error');
+                        } else {
+                            const duration = Math.floor((Date.now() - recordingStartTime) / 1000);
+                            socket.emit('new_message', {
+                                text: '🎤 Pesan Suara',
+                                media: {
+                                    filename: data.filename,
+                                    originalName: data.originalName,
+                                    path: data.path,
+                                    size: data.size,
+                                    duration: duration
+                                },
+                                type: 'voice'
+                            });
+                        }
+                    } catch (e) {
+                        showNotification('Upload gagal (respon tidak valid)', 'error');
+                    }
+                }
+            };
+
+            xhr.open('POST', '/upload');
+            xhr.send(formData);
+        }
+
+        function formatDuration(seconds) {
+            const mins = Math.floor(seconds / 60);
+            const secs = seconds % 60;
+            return `${mins}:${secs.toString().padStart(2, '0')}`;
+        }
+
+        function createWaveform() {
+            const waveform = document.createElement('div');
+            waveform.className = 'voice-waveform';
+            
+            // Create simple waveform bars
+            for (let i = 0; i < 20; i++) {
+                const bar = document.createElement('div');
+                bar.className = 'waveform-bar';
+                bar.style.height = Math.random() * 16 + 4 + 'px';
+                bar.style.animationDelay = Math.random() * 1.5 + 's';
+                waveform.appendChild(bar);
+            }
+            
+            return waveform;
+        }
+
+        // Voice recording event listeners
+        voiceBtn.addEventListener('click', startVoiceRecording);
+        cancelRecordingBtn.addEventListener('click', cancelVoiceRecording);
+        stopSendBtn.addEventListener('click', stopVoiceRecording);
+
+        // File upload with voice note support
+        fileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const formData = new FormData();
+                formData.append('media', file);
+
+                const xhr = new XMLHttpRequest();
+
+                xhr.upload.onprogress = (event) => {
+                    if (event.lengthComputable) {
+                        const percent = (event.loaded / event.total) * 100;
+                        uploadBar.style.width = percent + '%';
+                    }
+                };
+
+                xhr.onloadstart = () => {
+                    uploadProgress.style.display = 'block';
+                    uploadBar.style.width = '0%';
+                };
+
+                xhr.onloadend = () => {
+                    setTimeout(() => {
+                        uploadProgress.style.display = 'none';
+                        uploadBar.style.width = '0%';
+                    }, 800);
+                    fileInput.value = '';
+                };
+
+                xhr.onreadystatechange = () => {
+                    if (xhr.readyState === 4 && xhr.status === 200) {
+                        try {
+                            const data = JSON.parse(xhr.responseText);
+                            if (data.error) {
+                                showNotification(data.error, 'error');
+                            } else {
+                                socket.emit('new_message', {
+                                    text: `Mengirim file: ${data.originalName}`,
+                                    media: {
+                                        filename: data.filename,
+                                        originalName: data.originalName,
+                                        path: data.path,
+                                        size: data.size
+                                    },
+                                    type: 'media'
+                                });
+                            }
+                        } catch (e) {
+                            showNotification('Upload gagal (respon tidak valid)', 'error');
+                        }
+                    }
+                };
+
+                xhr.open('POST', '/upload');
+                xhr.send(formData);
+            }
+        });
+
         // Clear messages
         clearBtn.addEventListener('click', () => {
             if (confirm('Hilangkan Semua Kenangan Yang Telah Terbangun?')) {
@@ -516,6 +849,7 @@ fileInput.addEventListener('change', (e) => {
             messageInput.disabled = false;
             sendBtn.disabled = false;
             mediaBtn.disabled = false;
+            voiceBtn.disabled = false;
             
             // Load existing messages
             messages.forEach(message => {
@@ -549,7 +883,6 @@ fileInput.addEventListener('change', (e) => {
         socket.on('messages_cleaned', (data) => {
             if (data.removedCount > 0) {
                 showNotification(`${data.removedCount} pesan lama (>24 jam) telah dihapus otomatis`);
-                // Reload messages to reflect the cleanup
                 location.reload();
             }
         });
@@ -575,7 +908,20 @@ fileInput.addEventListener('change', (e) => {
             let mediaContent = '';
             if (message.media) {
                 const ext = message.media.filename.split('.').pop().toLowerCase();
-                if (['jpg', 'jpeg', 'png', 'gif'].includes(ext)) {
+                
+                if (message.type === 'voice' || ['wav', 'mp3', 'ogg', 'm4a'].includes(ext)) {
+                    // Voice note
+                    const duration = message.media.duration || 0;
+                    const waveform = createWaveform();
+                    
+                    mediaContent = `<div class="message-media">
+                        <div class="voice-note">
+                            <button class="voice-play-btn" onclick="toggleVoicePlayback('${message.media.path}', this)">▶</button>
+                            ${waveform.outerHTML}
+                            <span class="voice-duration">${formatDuration(duration)}</span>
+                        </div>
+                    </div>`;
+                } else if (['jpg', 'jpeg', 'png', 'gif'].includes(ext)) {
                     mediaContent = `<div class="message-media">
                         <img src="${message.media.path}" alt="${message.media.originalName}">
                     </div>`;
@@ -607,6 +953,57 @@ fileInput.addEventListener('change', (e) => {
             messagesContainer.scrollTop = messagesContainer.scrollHeight;
         }
 
+        // Global function for voice playback
+        let currentAudio = null;
+        let currentButton = null;
+
+        window.toggleVoicePlayback = function(audioPath, button) {
+            if (currentAudio && !currentAudio.paused) {
+                // Stop current audio
+                currentAudio.pause();
+                currentAudio.currentTime = 0;
+                if (currentButton) {
+                    currentButton.innerHTML = '▶';
+                    currentButton.classList.remove('playing');
+                }
+                
+                if (currentButton === button) {
+                    currentAudio = null;
+                    currentButton = null;
+                    return;
+                }
+            }
+
+            // Play new audio
+            currentAudio = new Audio(audioPath);
+            currentButton = button;
+            
+            button.innerHTML = '⏸';
+            button.classList.add('playing');
+            
+            currentAudio.play().catch(error => {
+                console.error('Error playing audio:', error);
+                showNotification('Tidak dapat memutar audio', 'error');
+                button.innerHTML = '▶';
+                button.classList.remove('playing');
+            });
+            
+            currentAudio.onended = () => {
+                button.innerHTML = '▶';
+                button.classList.remove('playing');
+                currentAudio = null;
+                currentButton = null;
+            };
+            
+            currentAudio.onerror = () => {
+                button.innerHTML = '▶';
+                button.classList.remove('playing');
+                currentAudio = null;
+                currentButton = null;
+                showNotification('Error memutar audio', 'error');
+            };
+        };
+
         function updateUserList(users) {
             userList.innerHTML = '';
             users.forEach(user => {
@@ -630,6 +1027,37 @@ fileInput.addEventListener('change', (e) => {
                 notification.remove();
             }, 3000);
         }
+
+        // Check microphone permission on load
+        async function checkMicrophonePermission() {
+            try {
+                const permission = await navigator.permissions.query({ name: 'microphone' });
+                if (permission.state === 'denied') {
+                    showNotification('Akses mikrofon ditolak. Voice note tidak tersedia.', 'error');
+                    voiceBtn.disabled = true;
+                    voiceBtn.title = 'Akses mikrofon diperlukan';
+                }
+            } catch (error) {
+                console.log('Could not check microphone permission:', error);
+            }
+        }
+
+        // Initialize microphone check when page loads
+        window.addEventListener('load', checkMicrophonePermission);
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            // Ctrl/Cmd + R for voice recording
+            if ((e.ctrlKey || e.metaKey) && e.key === 'r' && !isRecording && currentUser) {
+                e.preventDefault();
+                startVoiceRecording();
+            }
+            
+            // Escape to cancel recording
+            if (e.key === 'Escape' && isRecording) {
+                cancelVoiceRecording();
+            }
+        });
     </script>
 </body>
 </html>
