@@ -321,18 +321,6 @@ body {
     max-width: 85%;
   }
 }
-        .record-btn {
-      background-color: #ff9800;
-      color: white;
-      padding: 12px 20px;
-      border: none;
-      border-radius: 25px;
-      cursor: pointer;
-      font-size: 14px;
-    }
-    .recording {
-      background-color: #e53935;
-    }
     </style>
 </head>
 <body>
@@ -360,7 +348,6 @@ body {
                 <input type="text" id="messageInput" class="message-input" placeholder="Sampaikan Perasaanmu..." disabled>
                 <input type="file" id="fileInput" class="file-input" accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.txt">
                 <button class="media-btn" id="mediaBtn" disabled>⎙</button>
-                <button class="record-btn" id="recordBtn" disabled>🎙️</button>
                 <button class="send-btn" id="sendBtn" disabled>ᯓ➤</button>
             </div>
             <div id="uploadProgress">
@@ -383,8 +370,6 @@ body {
         const socket = io();
         let currentUser = null;
         let typingTimer = null;
-        let mediaRecorder;
-        let recordedChunks = [];
 
         // DOM elements
         const loginModal = document.getElementById('loginModal');
@@ -401,58 +386,7 @@ body {
         const typingIndicator = document.getElementById('typingIndicator');
         const uploadProgress = document.getElementById('uploadProgress');
         const uploadBar = document.getElementById('uploadBar');
-        const recordBtn = document.getElementById('recordBtn');
 
-
-        recordBtn.addEventListener('click', async () => {
-      if (mediaRecorder && mediaRecorder.state === 'recording') {
-        mediaRecorder.stop();
-        recordBtn.classList.remove('recording');
-        recordBtn.textContent = '🎙️';
-        return;
-      }
-
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        mediaRecorder = new MediaRecorder(stream);
-
-        mediaRecorder.ondataavailable = (e) => {
-          if (e.data.size > 0) recordedChunks.push(e.data);
-        };
-
-        mediaRecorder.onstop = async () => {
-          const blob = new Blob(recordedChunks, { type: 'audio/webm' });
-          recordedChunks = [];
-
-          const formData = new FormData();
-          formData.append('media', blob, 'voice.webm');
-
-          const xhr = new XMLHttpRequest();
-          xhr.open('POST', '/upload');
-
-          xhr.onload = () => {
-            if (xhr.status === 200) {
-              const data = JSON.parse(xhr.responseText);
-              socket.emit('new_message', {
-                text: 'Voice note',
-                media: data,
-                type: 'media'
-              });
-            }
-          };
-
-          xhr.send(formData);
-        };
-
-        mediaRecorder.start();
-        recordBtn.classList.add('recording');
-        recordBtn.textContent = '⏹️';
-      } catch (err) {
-        alert('Gagal mengakses mikrofon.');
-      }
-    });
-
-        
         // Join chat
         joinBtn.addEventListener('click', () => {
             const username = usernameInput.value.trim();
@@ -629,36 +563,35 @@ fileInput.addEventListener('change', (e) => {
         });
 
         // Helper functions
-           // ... Pastikan bagian displayMessage bisa handle <audio>
-    function displayMessage(message) {
-      const messageDiv = document.createElement('div');
-      messageDiv.className = `message ${message.username === currentUser ? 'own' : ''}`;
-      const timestamp = new Date(message.timestamp).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+        function displayMessage(message) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${message.username === currentUser ? 'own' : ''}`;
+            
+            const timestamp = new Date(message.timestamp).toLocaleTimeString('id-ID', {
+                hour: '2-digit',
+                minute: '2-digit'
+            });
 
-      let mediaContent = '';
-      if (message.media) {
-        const ext = message.media.filename.split('.').pop().toLowerCase();
-        if (['mp3', 'wav', 'ogg', 'webm'].includes(ext)) {
-          mediaContent = `<div class="message-media">
-            <audio controls>
-              <source src="${message.media.path}" type="audio/${ext}" />
-              Your browser does not support the audio element.
-            </audio>
-          </div>`;
-        } else if (['jpg', 'jpeg', 'png', 'gif'].includes(ext)) {
-          mediaContent = `<div class="message-media">
-            <img src="${message.media.path}" alt="${message.media.originalName}" />
-          </div>`;
-        } else if (['mp4', 'mov', 'avi'].includes(ext)) {
-          mediaContent = `<div class="message-media">
-            <video controls><source src="${message.media.path}" type="video/${ext}" /></video>
-          </div>`;
-        } else {
-          mediaContent = `<div class="message-media">
-            <a href="${message.media.path}" target="_blank">📎 ${message.media.originalName}</a>
-          </div>`;
-        }
-      }
+            let mediaContent = '';
+            if (message.media) {
+                const ext = message.media.filename.split('.').pop().toLowerCase();
+                if (['jpg', 'jpeg', 'png', 'gif'].includes(ext)) {
+                    mediaContent = `<div class="message-media">
+                        <img src="${message.media.path}" alt="${message.media.originalName}">
+                    </div>`;
+                } else if (['mp4', 'mov', 'avi'].includes(ext)) {
+                    mediaContent = `<div class="message-media">
+                        <video controls>
+                            <source src="${message.media.path}" type="video/${ext}">
+                        </video>
+                    </div>`;
+                } else {
+                    mediaContent = `<div class="message-media">
+                        <a href="${message.media.path}" target="_blank">📎 ${message.media.originalName}</a>
+                    </div>`;
+                }
+            }
+
             messageDiv.innerHTML = `
                 <div class="message-bubble">
                     ${message.text}
