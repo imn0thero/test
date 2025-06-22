@@ -494,7 +494,7 @@ fileInput.addEventListener('change', (e) => {
 });
         // Clear messages
         clearBtn.addEventListener('click', () => {
-            if (confirm('Apakah Kamu Yakin Hapus Semua Kenangan Ini?')) {
+            if (confirm('Hilangkan Semua Kenangan Yang Telah Terbangun?')) {
                 socket.emit('clear_messages');
             }
         });
@@ -531,7 +531,7 @@ fileInput.addEventListener('change', (e) => {
 
         socket.on('messages_cleared', () => {
             messagesContainer.innerHTML = '';
-            showNotification('Semua Kenangan Telah Di Hapus 😭!');
+            showNotification('Semua Sudah Tidak Bisa Dikembalikan, Tapi Masih Ada Kesempatan Berikutnya!');
         });
 
         socket.on('user_list_update', (users) => {
@@ -556,7 +556,7 @@ fileInput.addEventListener('change', (e) => {
 
         socket.on('user_typing', (data) => {
             if (data.isTyping) {
-                typingIndicator.textContent = `${data.username} Lagi Mau Menyampaikan Perasaan...`;
+                typingIndicator.textContent = `${data.username} Sedang Menyampaikan Perasaan...`;
             } else {
                 typingIndicator.textContent = '';
             }
