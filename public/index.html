@@ -447,7 +447,7 @@ body {
 
 #uploadBar {
   height: 100%;
-  background: #64b5f6;
+  background: #2962ff;
   width: 0%;
   transition: width 0.2s ease-in-out;
 }
@@ -489,10 +489,7 @@ body {
         
         <div class="chat-area">
             <div class="chat-header">
-                            ╱|、
-                          (˚ˎ 。7  
-                           |、˜〵          
-                           じしˍ,)ノ</h2>
+            <h2>( ˶˘ ³˘(⋆❛ ہ ❛⋆)!♡</h2>
                 <button class="clear-btn" id="clearBtn">🗑️</button>
             </div>
             
@@ -859,7 +856,7 @@ body {
                 displayMessage(message);
             });
             
-            showNotification('Yeayy, Masuk Ke Hatimu!');
+            showNotification('Yeayy, Berhasil Masuk Ke Hatiku!');
         });
 
         socket.on('message_received', (message) => {
@@ -892,7 +889,7 @@ body {
 
         socket.on('user_typing', (data) => {
             if (data.isTyping) {
-                typingIndicator.textContent = `${data.username} Sedang Menyampaikan Perasaan...`;
+                typingIndicator.textContent = `${data.username} ✎ᝰ Sedang Menyampaikan Perasaan...`;
             } else {
                 typingIndicator.textContent = '';
             }
@@ -981,7 +978,7 @@ body {
             currentAudio = new Audio(audioPath);
             currentButton = button;
             
-            button.innerHTML = '⏸';
+            button.innerHTML = '❚❚';
             button.classList.add('playing');
             
             currentAudio.play().catch(error => {
