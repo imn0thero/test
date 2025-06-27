@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Simple Web Chat</title>
+    <title>SalingSapa</title>
     <script src="/socket.io/socket.io.js"></script>
     <style>
 * {
@@ -94,7 +94,8 @@ body {
   border-bottom: 1px solid #2a2a2a;
 }
 
-.clear-btn {
+.clear-btn,
+.back-btn {
   background: #e53935;
   color: white;
   border: none;
@@ -481,7 +482,7 @@ body {
 <body>
     <div class="container">
         <div class="sidebar">
-            <h3>☻</h3>
+            <h3>☻ Yang Online:</h3>
             <div class="user-list" id="userList">
                 <!-- Users will be populated here -->
             </div>
@@ -489,8 +490,9 @@ body {
         
         <div class="chat-area">
             <div class="chat-header">
-            <h2>( ˶˘ ³˘(⋆❛ ہ ❛⋆)!♡</h2>
+            <h2>SalingSapa - Ruang 1</h2>
                 <button class="clear-btn" id="clearBtn">🗑️</button>
+                <button class="back-btn id="backbtn" onclick="window.location.href='https://example.com'">Kembali ➜</button>
             </div>
             
             <div class="messages-container" id="messagesContainer">
@@ -500,7 +502,7 @@ body {
             <div class="typing-indicator" id="typingIndicator"></div>
             
             <div class="input-area">
-                <input type="text" id="messageInput" class="message-input" placeholder="Sampaikan Perasaanmu..." disabled>
+                <input type="text" id="messageInput" class="message-input" placeholder="Tulis Pesan..." disabled>
                 <input type="file" id="fileInput" class="file-input" accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.txt">
                 <button class="media-btn" id="mediaBtn" disabled>⎙</button>
                 <button class="voice-btn" id="voiceBtn" disabled>♬.ᐟ</button>
@@ -517,7 +519,7 @@ body {
         <div class="voice-recording-container">
             <div class="recording-indicator">🎤</div>
             <div class="recording-time" id="recordingTime">00:00</div>
-            <p style="margin-bottom: 20px; color: #aaa;">Sedang merekam suara hati...</p>
+            <p style="margin-bottom: 20px; color: #aaa;">Sedang merekam...</p>
             <div class="recording-controls">
                 <button class="recording-btn cancel-btn" id="cancelRecordingBtn">Batal</button>
                 <button class="recording-btn stop-send-btn" id="stopSendBtn">Kirim</button>
@@ -528,10 +530,10 @@ body {
     <!-- Login Modal -->
     <div class="login-modal" id="loginModal">
         <div class="login-form">
-            <h2>Mau Masuk ke Hatiku Sayang?</h2>
+            <h2>JOIN RUANG</h2>
             <div class="error-message" id="errorMessage"></div>
             <input type="text" id="usernameInput" placeholder="Masukkan Namamu" maxlength="20">
-            <button id="joinBtn">Mau Dong</button>
+            <button id="joinBtn">JOIN</button>
         </div>
     </div>
 
@@ -827,18 +829,18 @@ body {
 
         // Clear messages
         clearBtn.addEventListener('click', () => {
-            if (confirm('Hilangkan Semua Kenangan Yang Telah Terbangun?')) {
+            if (confirm('Hapus Semua Pesan Yang Ada?')) {
                 socket.emit('clear_messages');
             }
         });
 
         // Socket events
         socket.on('room_full', () => {
-            errorMessage.textContent = 'Maaf Cuma Buat 2 Orang Yang Saling Menyayangi';
+            errorMessage.textContent = 'Maaf Ruang Sudah Penuh';
         });
 
         socket.on('username_taken', () => {
-            errorMessage.textContent = 'Namamu Udah Ada Di Hatiku!';
+            errorMessage.textContent = 'Nama Sudah Ada Ganti Yang Lain';
         });
 
         socket.on('load_messages', (messages) => {
@@ -856,7 +858,7 @@ body {
                 displayMessage(message);
             });
             
-            showNotification('Yeayy, Berhasil Masuk Ke Hatiku!');
+            showNotification('Yeayy, Berhasil Join');
         });
 
         socket.on('message_received', (message) => {
@@ -865,7 +867,7 @@ body {
 
         socket.on('messages_cleared', () => {
             messagesContainer.innerHTML = '';
-            showNotification('Semua Sudah Tidak Bisa Dikembalikan, Tapi Masih Ada Kesempatan Berikutnya!');
+            showNotification('Semua Pesan Telah di Hapus!');
         });
 
         socket.on('user_list_update', (users) => {
@@ -873,11 +875,11 @@ body {
         });
 
         socket.on('user_joined', (username) => {
-            showNotification(`${username} Ciee Kesini Kangen Ya?`);
+            showNotification(`${username} Baru Saja Join`);
         });
 
         socket.on('user_left', (username) => {
-            showNotification(`${username} Bye bye Ayang, Jangan Lupa Mampir Lagi`);
+            showNotification(`${username} Keluar, Jangan Lupa Mampir Lagi`);
         });
 
         socket.on('messages_cleaned', (data) => {
@@ -889,7 +891,7 @@ body {
 
         socket.on('user_typing', (data) => {
             if (data.isTyping) {
-                typingIndicator.textContent = `${data.username} ✎ᝰ Sedang Menyampaikan Perasaan...`;
+                typingIndicator.textContent = `${data.username} ✎ᝰ Sedang Mengetik...`;
             } else {
                 typingIndicator.textContent = '';
             }
